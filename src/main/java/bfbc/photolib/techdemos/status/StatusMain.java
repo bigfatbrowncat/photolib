@@ -1,3 +1,4 @@
+package bfbc.photolib.techdemos.status;
 
 
 import static spark.Spark.*;
@@ -7,15 +8,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import javax.servlet.http.HttpServletResponse;
 
-import org.example.StatusWebSocket;
-
-public class HelloWorld {
+public class StatusMain {
     public static void main(String[] args) {
     	port(8080);
     	
     	webSocket("/status", StatusWebSocket.class);
     	
-    	staticFileLocation("root");
+    	String rootPath = "/" + StatusMain.class.getPackage().getName().replace('.', '/') + "/root";
+    	staticFileLocation(rootPath);
 		
 		get("/img/:name", (request, response) -> {
 			

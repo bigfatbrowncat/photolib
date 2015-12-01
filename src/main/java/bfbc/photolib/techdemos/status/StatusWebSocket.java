@@ -1,4 +1,4 @@
-package org.example;
+package bfbc.photolib.techdemos.status;
 import org.eclipse.jetty.websocket.api.*;
 import org.eclipse.jetty.websocket.api.annotations.*;
 
