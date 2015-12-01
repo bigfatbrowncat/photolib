@@ -1,0 +1,61 @@
+<html>
+<head>
+<script>
+	var wsUri = "ws://localhost:8080/status";
+	var imageList = {};
+	var websocket;
+
+	function init() {
+	    output = document.getElementById("output");
+	    openStatusSocket();
+	}
+	
+	function openStatusSocket() {
+	    websocket = new WebSocket(wsUri);
+	    
+	    websocket.onopen = function(evt) {
+	        onOpen(evt)
+	    };
+	    websocket.onmessage = function(evt) {
+	    	imageList = JSON.parse(evt.data);
+			writeToScreen(imageList);
+	    };
+	    websocket.onerror = function(evt) {
+	        onError(evt)
+	    };
+	    websocket.onclose = function(evt) {
+	        onClose(evt)
+	    };
+	}
+	
+	function onOpen(evt) {
+	    //writeToScreen("Connected to Endpoint!");
+	}
+	
+	function onError(evt) {
+	    //writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+	}
+	
+	function onClose(evt) {
+	    //writeToScreen('websocket closed');
+	}
+	
+	function sendString() {
+	    websocket.send(document.getElementById("string").value);
+	    document.getElementById("string").value = "";
+	}
+
+	function writeToScreen(message) {
+	    output.innerHTML = message;
+	}
+
+	window.addEventListener("load", init, false);
+</script>
+</head>
+<body>
+	<input id="string" type="text" placeholder="enter string"></input>
+	<button onclick="sendString();">send</button>
+	<div id="output"/>
+</body>
+</html>  
+        
