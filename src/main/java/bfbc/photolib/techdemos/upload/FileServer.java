@@ -17,7 +17,7 @@ public class FileServer {
     static File uploadedFile = null;
     static String fileName = null;
     static FileOutputStream fos = null;
-    final static String filePath = "./";
+    final static String filePath = "data/";
 
     @OnWebSocketConnect
     public void open(Session session) {
@@ -44,7 +44,8 @@ public class FileServer {
         }else {
             try {
                 fos.flush();
-                fos.close();                
+                fos.close();
+                session.getRemote().sendString("complete");
             } catch (IOException e) {       
                 e.printStackTrace();
             }
