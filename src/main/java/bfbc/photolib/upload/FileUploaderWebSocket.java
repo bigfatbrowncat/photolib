@@ -41,7 +41,7 @@ public class FileUploaderWebSocket {
             } catch (FileNotFoundException e) {     
                 e.printStackTrace();
             }
-        }else {
+        } else {
             try {
                 fos.flush();
                 fos.close();

@@ -2,134 +2,125 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 		<title>Upload image</title>
-		<script>
-			function buildWebSocketAddress(relative) {
-				var loc = window.location, new_uri;
-				if (loc.protocol === "https:") {
-				    new_uri = "wss:";
-				} else {
-				    new_uri = "ws:";
-				}
-				new_uri += "//" + loc.host;
-				new_uri += loc.pathname;
-			
-		    	return new_uri + relative;
-			}
 		
+		<script src="/js/tools.js"></script>
+		<script>
 			var webSocketAddress = buildWebSocketAddress("image");
 		</script>
 	</head>
-<body>
-    <h2>Upload image 2</h2>
-    <input type="file" accept="image/*" id="filename" hidden="true" onchange="updateFile(event)"/>
-    <span id="filename_text"></span>
-    <input type="button" value="Browse..." onclick="browseFile()" /><input id="clear" type="button" value="Clear" onclick="clearFile()" />
-    <br>
-    <div style="text-align: center">
-    	<img id="preview" style="margin:0 auto; max-width: 70vw; max-height: 70vh;" />
-    </div>
-    <input type="button" value="Upload" id="upload" onclick="sendFile()" />
-    
-    <script>
-        var ws;
 
-        function clearFile() {
-            document.getElementById('filename').value = null;
-            updateFile();
-        }
-
-        function browseFile() {
-            document.getElementById('filename').click();
-        }
-        
-        function updatePreview(file) {
-            var output = document.getElementById('preview');
-        	if (file != null && file != "") {
-            	var reader = new FileReader();
-                reader.onload = function(){
-                  output.src = reader.result;
-                };
-                reader.readAsDataURL(file);
-        	} else {
-                output.src = null;
-        	}
-        }
-        
-        function updateFile(event) {
-            var preview = document.getElementById('preview');
-
-            var fullPath = document.getElementById('filename').value;
-            if (fullPath) {
-            	var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
-            	var filename = fullPath.substring(startIndex);
-            	if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
-            		filename = filename.substring(1);
-            	}
-                document.getElementById('filename_text').innerHTML = filename;
-                document.getElementById('clear').disabled = false;
-                document.getElementById('upload').disabled = false;
-                preview.src = URL.createObjectURL(event.target.files[0]);
-            } else {
-                document.getElementById('filename_text').innerHTML = "no file selected"; 
-                document.getElementById('clear').disabled = true;
-                document.getElementById('upload').disabled = true;
-                preview.src = "placeholder.png";
-            }
-
-        }
-        
-
-        function connectUploadWebSocket() {
-            ws = new WebSocket(webSocketAddress);
-
-            ws.binaryType = "arraybuffer";
-            ws.onopen = function() {
-                //alert("Connected.")
-            };
-
-            ws.onmessage = function(evt) {
-                if (evt.data == "complete") {
-                	alert("The file has been uploaded successfully");
-    				clearFile();
-                }
-            };
-
-            ws.onclose = function() {
-                //alert("Connection is closed...");
-            };
-            ws.onerror = function(e) {
-                alert(e.msg);
-            }
-
-        }
-
-        function sendFile() {
-            var file = document.getElementById('filename').files[0];
-            ws.send('filename:'+file.name);
-            var reader = new FileReader();
-            var rawData = new ArrayBuffer();            
-            //alert(file.name);
-
-            reader.loadend = function() {
-            }
-            reader.onload = function(e) {
-                rawData = e.target.result;
-                ws.send(rawData);
-                ws.send('end');
-            }
-
-            reader.readAsArrayBuffer(file);
-
-
-        }
-
-        function load() {
-        	connectUploadWebSocket();
-        	updateFile(null);
-        } 
-        
-        window.addEventListener("load", load, false);
-
-    </script>
-</body>
+	<body>
+	
+	    <h2>Upload image</h2>
+	    <input type="file" accept="image/*" id="filename" hidden="true" onchange="updateFile(event)"/>
+	    <span id="filename_text"></span>
+	    <input type="button" value="Browse..." onclick="browseFile()" /><input id="clear" type="button" value="Clear" onclick="clearFile()" />
+	    <br>
+	    <div style="text-align: center">
+	    	<img id="preview" style="margin:0 auto; max-width: 70vw; max-height: 70vh;" />
+	    </div>
+	    <input type="button" value="Upload" id="upload" onclick="sendFile()" />
+	    
+	    <script>
+	        var ws;
+	
+	        function clearFile() {
+	            document.getElementById('filename').value = null;
+	            updateFile();
+	        }
+	
+	        function browseFile() {
+	            document.getElementById('filename').click();
+	        }
+	        
+	        function updatePreview(file) {
+	            var output = document.getElementById('preview');
+	        	if (file != null && file != "") {
+	            	var reader = new FileReader();
+	                reader.onload = function(){
+	                  output.src = reader.result;
+	                };
+	                reader.readAsDataURL(file);
+	        	} else {
+	                output.src = null;
+	        	}
+	        }
+	        
+	        function updateFile(event) {
+	            var preview = document.getElementById('preview');
+	
+	            var fullPath = document.getElementById('filename').value;
+	            if (fullPath) {
+	            	var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+	            	var filename = fullPath.substring(startIndex);
+	            	if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+	            		filename = filename.substring(1);
+	            	}
+	                document.getElementById('filename_text').innerHTML = filename;
+	                document.getElementById('clear').disabled = false;
+	                document.getElementById('upload').disabled = false;
+	                preview.src = URL.createObjectURL(event.target.files[0]);
+	            } else {
+	                document.getElementById('filename_text').innerHTML = "no file selected"; 
+	                document.getElementById('clear').disabled = true;
+	                document.getElementById('upload').disabled = true;
+	                preview.src = "placeholder.png";
+	            }
+	
+	        }
+	        
+	
+	        function connectUploadWebSocket() {
+	            ws = new WebSocket(webSocketAddress);
+	
+	            ws.binaryType = "arraybuffer";
+	            ws.onopen = function() {
+	                //alert("Connected.")
+	            };
+	
+	            ws.onmessage = function(evt) {
+	                if (evt.data == "complete") {
+	                	alert("The file has been uploaded successfully");
+	    				clearFile();
+	                }
+	            };
+	
+	            ws.onclose = function() {
+	                //alert("Connection is closed...");
+	            };
+	            ws.onerror = function(e) {
+	                alert(e.msg);
+	            }
+	
+	        }
+	
+	        function sendFile() {
+	            var file = document.getElementById('filename').files[0];
+	            ws.send('filename:'+file.name);
+	            var reader = new FileReader();
+	            var rawData = new ArrayBuffer();            
+	            //alert(file.name);
+	
+	            reader.loadend = function() {
+	            }
+	            reader.onload = function(e) {
+	                rawData = e.target.result;
+	                ws.send(rawData);
+	                ws.send('end');
+	            }
+	
+	            reader.readAsArrayBuffer(file);
+	
+	
+	        }
+	
+	        function load() {
+	        	connectUploadWebSocket();
+	        	updateFile(null);
+	        } 
+	        
+	        window.addEventListener("load", load, false);
+	
+	    </script>
+	</body>
 </html>

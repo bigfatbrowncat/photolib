@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<list>
+<heap>
 	<image title="image 1">
 		<file name="image1.jpg" type="image/jpeg" />
 	</image>
@@ -9,4 +9,4 @@
 	<image title="Lain">
 		<file name="other.jpg" type="image/jpeg" />
 	</image>
-</list>
+</heap>

@@ -1,6 +1,10 @@
 package bfbc.photolib;
 import org.eclipse.jetty.websocket.api.*;
 import org.eclipse.jetty.websocket.api.annotations.*;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.input.SAXBuilder;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -12,12 +16,23 @@ import java.util.concurrent.*;
 @WebSocket
 public class StatusWebSocket {
 
-	private static List<String> strings = new ArrayList<String>();
+	private List<String> getFileNames() {
+		Heap heap = Heap.getInstance();
+		List<Heap.Image> imgs = heap.getImages();
+		ArrayList<String> fileNames = new ArrayList<>();
+		for (Heap.Image img : imgs) {
+			fileNames.add(img.getFiles().get(0).getName());
+		}
+		return fileNames;
+	}
+	
+	//private static List<String> strings = new ArrayList<String>();
 	private Gson gson;
 	
-	private void update(Session s) {
+	private void update(Session s, List<String> fileNames) {
 		try {
-			String json = gson.toJson(strings);
+			
+			String json = gson.toJson(fileNames);
 			s.getRemote().sendString(json);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -26,20 +41,20 @@ public class StatusWebSocket {
 	}
 	
 	public void broadcastUpdate() {
-		synchronized (strings) {
+		List<String> fileNames = getFileNames();
+		
+		synchronized (Heap.getInstance()) {
     		List<Session> ss = new ArrayList<Session>(sessions);
     		for (Session s : ss) {
-    				update(s);
+    				update(s, fileNames);
     		}
 
 		}
 	}
 	
-	private int i = 0;
-	
     // Store sessions if you want to, for example, broadcast a message to all users
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-
+    
     public StatusWebSocket() {
     	gson = new GsonBuilder().create();
 	}
@@ -47,7 +62,7 @@ public class StatusWebSocket {
     @OnWebSocketConnect
     public void connected(Session session) {
         sessions.add(session);
-        update(session);
+        update(session, getFileNames());
     }
 
     @OnWebSocketClose
@@ -57,11 +72,6 @@ public class StatusWebSocket {
 
     @OnWebSocketMessage
     public void message(Session session, String message) throws IOException {
-		synchronized (strings) {
-			strings.add(message);
-		}
-    	
-    	broadcastUpdate();
     	
     }
 

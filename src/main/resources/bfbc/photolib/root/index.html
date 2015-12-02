@@ -1,56 +1,58 @@
 <html>
-<head>
-<script>
-	var wsUri = "/status";
-	var imageList = {};
-	var websocket;
-
-	function init() {
-	    output = document.getElementById("output");
-	    openStatusSocket();
-	}
-	
-	function openStatusSocket() {
-	    websocket = new WebSocket(wsUri);
-	    
-	    websocket.onopen = function(evt) {
-	        onOpen(evt)
-	    };
-	    websocket.onmessage = function(evt) {
-	    	imageList = JSON.parse(evt.data);
-			writeToScreen(imageList);
-	    };
-	    websocket.onerror = function(evt) {
-	        onError(evt)
-	    };
-	    websocket.onclose = function(evt) {
-	        onClose(evt)
-	    };
-	}
-	
-	function onOpen(evt) {
-	    //writeToScreen("Connected to Endpoint!");
-	}
-	
-	function onError(evt) {
-	    //writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
-	}
-	
-	function onClose(evt) {
-	    //writeToScreen('websocket closed');
-	}
-	
-	function sendString() {
-	    websocket.send(document.getElementById("string").value);
-	    document.getElementById("string").value = "";
-	}
-
-	function writeToScreen(message) {
-	    output.innerHTML = message;
-	}
-
-	window.addEventListener("load", init, false);
-</script>
+	<head>
+		<script src="/js/tools.js"></script>
+		<script>
+			var webSocketAddress = buildWebSocketAddress("status");
+		</script>
+		<script>
+			var imageList = {};
+			var websocket;
+			var output;
+		
+			function init() {
+			    output = document.getElementById("output");
+			    openStatusSocket();
+			}
+			
+			function updateImages(imageList) {
+				while (output.firstChild) {
+ 					output.removeChild(output.firstChild);
+				}
+				
+				for (var index in imageList) {
+					var imgTag = document.createElement("img");
+					imgTag.setAttribute("style", "max-width: 200pt; max-height: 200pt;");
+					imgTag.setAttribute("src", "image/" + imageList[index]);
+					output.appendChild(imgTag);
+				}
+			}
+			
+			function openStatusSocket() {
+			    websocket = new WebSocket(webSocketAddress);
+			    
+			    websocket.onopen = function(evt) {
+			    };
+			    websocket.onmessage = function(evt) {
+			    	imageList = JSON.parse(evt.data);
+					updateImages(imageList);
+			    };
+			    websocket.onerror = function(evt) {
+			    };
+			    websocket.onclose = function(evt) {
+			    };
+			}
+			
+			function sendString() {
+			    websocket.send(document.getElementById("string").value);
+			    document.getElementById("string").value = "";
+			}
+		
+			function writeToScreen(message) {
+			    output.innerHTML = message;
+			}
+		
+			window.addEventListener("load", init, false);
+		</script>
 </head>
 <body>
 	<input id="string" type="text" placeholder="enter string"></input>
