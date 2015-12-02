@@ -1,4 +1,4 @@
-package bfbc.photolib.techdemos.status;
+package bfbc.photolib;
 
 
 import static spark.Spark.*;
@@ -8,16 +8,19 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import javax.servlet.http.HttpServletResponse;
 
-public class StatusMain {
+import bfbc.photolib.upload.FileUploaderWebSocket;
+
+public class ServerMain {
+	private static final String STATIC_ROOT = "/" + ServerMain.class.getPackage().getName().replace('.', '/') + "/root";
+	
     public static void main(String[] args) {
     	port(8080);
-    	
+    	staticFileLocation(STATIC_ROOT);
+
+    	webSocket("/upload/image", FileUploaderWebSocket.class);
     	webSocket("/status", StatusWebSocket.class);
     	
-    	String rootPath = "/" + StatusMain.class.getPackage().getName().replace('.', '/') + "/root";
-    	staticFileLocation(rootPath);
-		
-		get("/img/:name", (request, response) -> {
+		get("/image/:name", (request, response) -> {
 			
 			String filePath = "data" + File.separator + request.params(":name");
 			
@@ -31,5 +34,7 @@ public class StatusMain {
 
 			return raw;
 		});
+    	init();
+
     }
 }

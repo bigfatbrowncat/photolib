@@ -1,4 +1,4 @@
-package bfbc.photolib.techdemos.upload;
+package bfbc.photolib.upload;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -13,7 +13,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @WebSocket(maxBinaryMessageSize = 1024 * 1024 * 64 /* 64M */)
-public class FileServer {
+public class FileUploaderWebSocket {
     static File uploadedFile = null;
     static String fileName = null;
     static FileOutputStream fos = null;

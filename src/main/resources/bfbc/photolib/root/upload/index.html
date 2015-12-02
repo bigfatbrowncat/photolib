@@ -1,11 +1,26 @@
 <html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Chat</title>
-<!-- <script type="text/javascript" src="jquery-2.1.4.js"></script> -->
-</head>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>Upload image</title>
+		<script>
+			function buildWebSocketAddress(relative) {
+				var loc = window.location, new_uri;
+				if (loc.protocol === "https:") {
+				    new_uri = "wss:";
+				} else {
+				    new_uri = "ws:";
+				}
+				new_uri += "//" + loc.host;
+				new_uri += loc.pathname;
+			
+		    	return new_uri + relative;
+			}
+		
+			var webSocketAddress = buildWebSocketAddress("image");
+		</script>
+	</head>
 <body>
-    <h2>File Upload</h2>
+    <h2>Upload image 2</h2>
     <input type="file" accept="image/*" id="filename" hidden="true" onchange="updateFile(event)"/>
     <span id="filename_text"></span>
     <input type="button" value="Browse..." onclick="browseFile()" /><input id="clear" type="button" value="Clear" onclick="clearFile()" />
@@ -65,8 +80,7 @@
         
 
         function connectUploadWebSocket() {
-            ws = new WebSocket(
-                    "ws://localhost:8080/receive/fileserver");
+            ws = new WebSocket(webSocketAddress);
 
             ws.binaryType = "arraybuffer";
             ws.onopen = function() {
