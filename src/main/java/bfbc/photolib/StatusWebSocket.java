@@ -17,7 +17,7 @@ import java.util.concurrent.*;
 public class StatusWebSocket {
 
 	private List<String> getFileNames() {
-		Heap heap = Heap.getInstance();
+		Heap heap = Heap.getInstanceFor(this);
 		List<Heap.Image> imgs = heap.getImages();
 		ArrayList<String> fileNames = new ArrayList<>();
 		for (Heap.Image img : imgs) {
@@ -29,6 +29,10 @@ public class StatusWebSocket {
 	//private static List<String> strings = new ArrayList<String>();
 	private Gson gson;
 	
+	private void update(Session s, String request) {
+		System.out.println("request: " + request);
+	}
+
 	private void update(Session s, List<String> fileNames) {
 		try {
 			
@@ -39,11 +43,21 @@ public class StatusWebSocket {
 			e.printStackTrace();
 		}
 	}
+
+	public void broadcastUpdate(String request) {
+		synchronized (Heap.getInstanceFor(this)) {
+    		List<Session> ss = new ArrayList<Session>(sessions);
+    		for (Session s : ss) {
+    				update(s, request);
+    		}
+
+		}
+	}
 	
-	public void broadcastUpdate() {
+	public void broadcastUpdate() {		
 		List<String> fileNames = getFileNames();
 		
-		synchronized (Heap.getInstance()) {
+		synchronized (Heap.getInstanceFor(this)) {
     		List<Session> ss = new ArrayList<Session>(sessions);
     		for (Session s : ss) {
     				update(s, fileNames);

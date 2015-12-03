@@ -22,13 +22,13 @@ public class ServerMain {
 
     	webSocket("/upload/image", FileUploaderWebSocket.class);
     	webSocket("/status", StatusWebSocket.class);
-    	    	
+    	 	
 		get("/image/:name", (request, response) -> {
 			
 			String filePath = "data" + File.separator + request.params(":name");
 			
 			response.type("image/jpeg");
-			byte[] bytes = Files.readAllBytes(Paths.get(filePath));         
+			byte[] bytes = Files.readAllBytes(Paths.get(filePath));
 			HttpServletResponse raw = response.raw();
 
 			raw.getOutputStream().write(bytes);
@@ -37,7 +37,13 @@ public class ServerMain {
 
 			return raw;
 		});
-    	init();
 
+		get("/test", (request, response) -> {
+			
+			Heap.getInstanceFor(null).getImages().get(2).getFiles().get(0).setName("newname");
+			return "success";
+		});
+
+		init();
     }
 }
