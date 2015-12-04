@@ -11,30 +11,108 @@
 		
 			function init() {
 			    output = document.getElementById("output");
-			    openStatusSocket();
-			}
-			
-			function updateImages(imageList) {
-				while (output.firstChild) {
- 					output.removeChild(output.firstChild);
+			    output.itemsCount = 0;
+			    
+			    output.clearImages = function() {
+					while (output.firstChild) {
+	 					output.removeChild(output.firstChild);
+					}				
 				}
 				
-				for (var index in imageList) {
-					var imgTag = document.createElement("img");
-					imgTag.setAttribute("style", "max-width: 200pt; max-height: 200pt;");
-					imgTag.setAttribute("src", "image/" + imageList[index]);
-					output.appendChild(imgTag);
+				output.createItem = function(index, image) {
+					var imgId = "images[" + index + "]";
+					var file = image.files[0];
+				
+					var picImgTag = document.createElement("img");
+					picImgTag.setAttribute("id", imgId + ".picture");
+					picImgTag.setAttribute("style", "max-width: 200pt; max-height: 200pt;");
+					
+					picImgTag.setSrc = function(name) {
+						picImgTag.setAttribute("src", "image/" + name);
+					};
+					picImgTag.setSrc(file.name);
+					
+					var titleTag = document.createElement("div");
+					titleTag.setAttribute("id", imgId + ".title");
+					titleTag.innerHTML = image.title;
+					
+					var imageTag = document.createElement("div");
+					imageTag.setAttribute("id", imgId);
+					imageTag.appendChild(picImgTag);
+					imageTag.appendChild(titleTag);
+					
+					return imageTag;
 				}
+				
+				output.appendItem = function(image) {
+					this.appendChild(this.createItem(output.itemsCount, image));
+					output.itemsCount ++;
+				}
+				
+				output.appendItems = function(imageList) {
+					for (var index in imageList.images) {
+						var image = imageList.images[index];
+						this.appendItem(image);									
+					}
+				}
+				
+				openStatusSocket();
 			}
+			
 			
 			function openStatusSocket() {
 			    websocket = new WebSocket(webSocketAddress);
 			    
 			    websocket.onopen = function(evt) {
 			    };
+			    
 			    websocket.onmessage = function(evt) {
-			    	imageList = JSON.parse(evt.data);
-					updateImages(imageList);
+			    	if (evt.data.substring(0, 5) == "init:") {
+				    	imageList = JSON.parse(evt.data.substring(5));
+						output.appendItems(imageList);
+			    	} else if (evt.data.substring(0, 7) == "update:") {
+			    		var eq = evt.data.substring(7).split("=");
+			    		var decoded_path = decodeURIComponent(eq[0]);
+			    		var decoded_val = decodeURIComponent(eq[1]);
+			    		
+			    		var path_items = decoded_path.split("/");
+			    		
+					    if (path_items[0] == "") { 
+					    	path_items = path_items.splice(1); // removing first '/'
+					    } else {
+					    	throw "First path item should be empty";
+					    }
+					    
+					    if (path_items[0] == "heap") { 
+					    	path_items = path_items.splice(1); // removing 'heap'
+					    } else {
+					    	throw "Only paths started with 'heap' are supported";
+					    }
+					
+					    var image_part = path_items[0];	// getting 'images[...]'
+					    if (image_part.substring(0, 6) != 'images') {
+					    	throw "Only 'images' is supported under 'heap'";
+					    }
+					    path_items = path_items.splice(1); // removing 'images[...]'
+					    
+						var file_part = path_items[0]; // getting 'files[...]'
+						if (file_part.substring(0, 5) != 'files') {
+					    	throw "Only 'files' is supported under 'images[...]'";
+					    }
+					    path_items = path_items.splice(1); // removing 'files[...]'
+					    
+					    var field = path_items[0];
+					    if (field == "name") {
+					    	var picture = document.getElementById(image_part + ".picture");
+					    	if (picture == null) {
+					    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
+					    	}
+							picture.setSrc(decoded_val);
+					    }
+			    		
+			    	} else {
+			    		throw 'Invalid message from client: "' + evt.data + '"';
+			    	}
 			    };
 			    websocket.onerror = function(evt) {
 			    };

@@ -1,21 +1,33 @@
 package bfbc.photolib;
-import org.eclipse.jetty.websocket.api.*;
-import org.eclipse.jetty.websocket.api.annotations.*;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.JDOMException;
-import org.jdom2.input.SAXBuilder;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
 @WebSocket
-public class StatusWebSocket {
+public class StatusWebSocket implements HeapChangeListener {
 
+	enum RequestType {
+		LIST("list"), CHANGE("change");
+		
+		public final String type;
+		RequestType(String type) {
+			this.type = type;
+		}
+	}
+	
 	private List<String> getFileNames() {
 		Heap heap = Heap.getInstanceFor(this);
 		List<Heap.Image> imgs = heap.getImages();
@@ -29,15 +41,24 @@ public class StatusWebSocket {
 	//private static List<String> strings = new ArrayList<String>();
 	private Gson gson;
 	
-	private void update(Session s, String request) {
+	@Override
+	public void reportChange(String path, String newValue) {
+		try {
+			broadcastUpdate(URLEncoder.encode(path, "UTF-8") + "=" + URLEncoder.encode(newValue, "UTF-8"));
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException("Impossible situation", e);
+		}
+	}
+	
+	private void sendUpdate(Session s, String request) throws IOException {
+		s.getRemote().sendString("update:" + request);
 		System.out.println("request: " + request);
 	}
 
-	private void update(Session s, List<String> fileNames) {
+	private void sendFiles(Session s, List<String> fileNames) {
 		try {
-			
-			String json = gson.toJson(fileNames);
-			s.getRemote().sendString(json);
+			String json = gson.toJson(Heap.getInstanceFor(null));
+			s.getRemote().sendString("init:" + json);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -48,19 +69,22 @@ public class StatusWebSocket {
 		synchronized (Heap.getInstanceFor(this)) {
     		List<Session> ss = new ArrayList<Session>(sessions);
     		for (Session s : ss) {
-    				update(s, request);
+    			try {
+    				sendUpdate(s, request);
+    			} catch (IOException e) {
+    				e.printStackTrace();
+    			}
     		}
-
 		}
 	}
 	
-	public void broadcastUpdate() {		
+	public void broadcastFiles() {		
 		List<String> fileNames = getFileNames();
 		
 		synchronized (Heap.getInstanceFor(this)) {
     		List<Session> ss = new ArrayList<Session>(sessions);
     		for (Session s : ss) {
-    				update(s, fileNames);
+    			sendFiles(s, fileNames);
     		}
 
 		}
@@ -70,13 +94,15 @@ public class StatusWebSocket {
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     
     public StatusWebSocket() {
-    	gson = new GsonBuilder().create();
+    	GsonBuilder builder = new GsonBuilder();
+    	builder.excludeFieldsWithoutExposeAnnotation();
+    	gson = builder.create();
 	}
     
     @OnWebSocketConnect
     public void connected(Session session) {
         sessions.add(session);
-        update(session, getFileNames());
+        sendFiles(session, getFileNames());
     }
 
     @OnWebSocketClose

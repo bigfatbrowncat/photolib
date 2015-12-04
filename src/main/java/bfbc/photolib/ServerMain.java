@@ -12,6 +12,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.jdom2.JDOMException;
 
 import bfbc.photolib.upload.FileUploaderWebSocket;
+import spark.ExceptionHandler;
+import spark.Request;
+import spark.Response;
 
 public class ServerMain {
 	private static final String STATIC_ROOT = "/" + ServerMain.class.getPackage().getName().replace('.', '/') + "/root";
@@ -40,10 +43,16 @@ public class ServerMain {
 
 		get("/test", (request, response) -> {
 			
-			Heap.getInstanceFor(null).getImages().get(2).getFiles().get(0).setName("newname");
+			Heap.getInstanceFor(null).getImages().get(2).getFiles().get(0).setName("image1.jpg");
 			return "success";
 		});
 
+		exception(IOException.class, (exception, request, response) -> {
+			exception.printStackTrace();
+			response.status(404);
+			response.body("Input/Output exception occured: " + ((IOException)exception).getMessage());
+		});
+		
 		init();
     }
 }

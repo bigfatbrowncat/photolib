@@ -12,13 +12,16 @@ import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
 
+import com.google.gson.annotations.Expose;
+
 import bfbc.photolib.Heap.Image.File;
 
 public class Heap {
-	private final Set<WeakReference<StatusWebSocket>> webSockets = new HashSet<>();
-	protected boolean hasWebSocket(StatusWebSocket webSocket) {
-		for (WeakReference<StatusWebSocket> ref : webSockets) {
-			StatusWebSocket s = ref.get();
+	private final Set<WeakReference<HeapChangeListener>> webSockets = new HashSet<>();
+	
+	protected boolean isConnected(HeapChangeListener webSocket) {
+		for (WeakReference<HeapChangeListener> ref : webSockets) {
+			HeapChangeListener s = ref.get();
 			if (s == webSocket) {
 				return true;
 			}
@@ -26,20 +29,20 @@ public class Heap {
 		return false;
 	}
 
-	private void reportChange(String request) {
-		for (WeakReference<StatusWebSocket> ref : webSockets) {
-			StatusWebSocket s = ref.get();
+	private void reportChange(String path, String newValue) {
+		for (WeakReference<HeapChangeListener> ref : webSockets) {
+			HeapChangeListener s = ref.get();
 			if (s != null) {
-				s.broadcastUpdate(request);
+				s.reportChange(path, newValue); //.broadcastUpdate(request);
 			}
 		}
 	}
 	
 	private static Heap instance = new Heap(new java.io.File("data/heap.xml"));
 	
-	public static Heap getInstanceFor(StatusWebSocket webSocket) {
-		if (webSocket != null && !instance.hasWebSocket(webSocket)) {
-			instance.webSockets.add(new WeakReference<StatusWebSocket>(webSocket));
+	public static Heap getInstanceFor(HeapChangeListener webSocket) {
+		if (webSocket != null && !instance.isConnected(webSocket)) {
+			instance.webSockets.add(new WeakReference<HeapChangeListener>(webSocket));
 		}
 		return instance;
 	}
@@ -47,11 +50,13 @@ public class Heap {
 	public class Image {
 		public class File {
 			
+			@Expose
 			private String name;
+			@Expose
 			private String type;
 			
 			protected void reportChange(String item, String value) {
-				Heap.this.reportChange(path() + "/" + item + "=" + value);
+				Heap.this.reportChange(path() + "/" + item, value);
 			}
 			protected String path() {
 				return Image.this.path() + "/files[" + Image.this.files.indexOf(this) + "]";
@@ -76,11 +81,13 @@ public class Heap {
 			return Heap.this.path() + "/images[" + Heap.this.images.indexOf(this) + "]";
 		}
 		protected void reportChange(String item, String value) {
-			Heap.this.reportChange(path() + "/" + item + "=" + value);
+			Heap.this.reportChange(path() + "/" + item, value);
 		}
 
+		@Expose
 		private final List<File> files = new ArrayList<>();
 
+		@Expose
 		private String title;
 
 		public String getTitle() {
@@ -99,6 +106,7 @@ public class Heap {
 		
 	}
 
+	@Expose
 	private final List<Image> images = new ArrayList<>();
 	
 	protected String path() {
