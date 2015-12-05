@@ -39,7 +39,6 @@ public class StatusWebSocket implements HeapChangeListener {
 	}
 	
 	//private static List<String> strings = new ArrayList<String>();
-	private Gson gson;
 	
 	@Override
 	public void reportChange(String path, String newValue) {
@@ -57,7 +56,7 @@ public class StatusWebSocket implements HeapChangeListener {
 
 	private void sendFiles(Session s, List<String> fileNames) {
 		try {
-			String json = gson.toJson(Heap.getInstanceFor(null));
+			String json = Heap.getInstanceFor(null).toJson();
 			s.getRemote().sendString("init:" + json);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -92,12 +91,6 @@ public class StatusWebSocket implements HeapChangeListener {
 	
     // Store sessions if you want to, for example, broadcast a message to all users
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-    
-    public StatusWebSocket() {
-    	GsonBuilder builder = new GsonBuilder();
-    	builder.excludeFieldsWithoutExposeAnnotation();
-    	gson = builder.create();
-	}
     
     @OnWebSocketConnect
     public void connected(Session session) {

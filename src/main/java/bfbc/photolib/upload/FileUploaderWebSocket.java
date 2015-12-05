@@ -11,10 +11,13 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
+import bfbc.photolib.Heap;
+
 @WebSocket(maxBinaryMessageSize = 1024 * 1024 * 64 /* 64M */)
 public class FileUploaderWebSocket {
     static File uploadedFile = null;
     static String fileName = null;
+    static String title = null;
     static FileOutputStream fos = null;
     final static String filePath = "data/";
 
@@ -32,22 +35,29 @@ public class FileUploaderWebSocket {
     @OnWebSocketMessage
     public void message(Session session, String msg) {
         System.out.println("got msg: " + msg);
-        if(!msg.equals("end")) {
-            fileName=msg.substring(msg.indexOf(':')+1);
-            uploadedFile = new File(filePath+fileName);
+        if (msg.substring(0, 9).equals("filename:")) {
+            fileName = msg.substring(9);
+            uploadedFile = new File(filePath + fileName);
             try {
                 fos = new FileOutputStream(uploadedFile);
             } catch (FileNotFoundException e) {     
                 e.printStackTrace();
             }
-        } else {
+        } else if (msg.substring(0, 6).equals("title:")) {
+        	title = msg.substring(6);
+        } else if (msg.equals("end")) {
             try {
                 fos.flush();
                 fos.close();
                 session.getRemote().sendString("complete");
+                
+                Heap heap = Heap.getInstanceFor(null);
+                heap.getImages().add(heap.new Image(title));
             } catch (IOException e) {       
                 e.printStackTrace();
             }
+        } else {
+        	throw new RuntimeException("Invalid request: " + msg);
         }
     }
 

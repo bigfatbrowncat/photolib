@@ -30,7 +30,7 @@ public class ServerMain {
 			
 			String filePath = "data" + File.separator + request.params(":name");
 			
-			response.type("image/jpeg");
+			//response.type("image/jpeg");
 			byte[] bytes = Files.readAllBytes(Paths.get(filePath));
 			HttpServletResponse raw = response.raw();
 
