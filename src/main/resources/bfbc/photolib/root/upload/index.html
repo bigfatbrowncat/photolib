@@ -16,6 +16,7 @@
 	    <span id="filename_text"></span>
 	    <input type="button" value="Browse..." onclick="browseFile()" /><input id="clear" type="button" value="Clear" onclick="clearFile()" />
 	    <br>
+	    Title: <input type="text" value="" id="title" />
 	    <div style="text-align: center">
 	    	<img id="preview" style="margin:0 auto; max-width: 70vw; max-height: 70vh;" />
 	    </div>
@@ -26,7 +27,7 @@
 	
 	        function clearFile() {
 	            document.getElementById('filename').value = null;
-	            updateFile();
+	            updateFile(null);
 	        }
 	
 	        function browseFile() {
@@ -64,6 +65,7 @@
 	                document.getElementById('filename_text').innerHTML = "no file selected"; 
 	                document.getElementById('clear').disabled = true;
 	                document.getElementById('upload').disabled = true;
+	                document.getElementById('title').value = "";
 	                preview.src = "placeholder.png";
 	            }
 	
@@ -105,6 +107,7 @@
 	            }
 	            reader.onload = function(e) {
 	                rawData = e.target.result;
+	                ws.send('title:' + document.getElementById('title').value);
 	                ws.send(rawData);
 	                ws.send('end');
 	            }

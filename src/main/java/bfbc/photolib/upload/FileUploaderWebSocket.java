@@ -35,7 +35,7 @@ public class FileUploaderWebSocket {
     @OnWebSocketMessage
     public void message(Session session, String msg) {
         System.out.println("got msg: " + msg);
-        if (msg.substring(0, 9).equals("filename:")) {
+        if (msg.length() >= 9 && msg.substring(0, 9).equals("filename:")) {
             fileName = msg.substring(9);
             uploadedFile = new File(filePath + fileName);
             try {
@@ -43,7 +43,7 @@ public class FileUploaderWebSocket {
             } catch (FileNotFoundException e) {     
                 e.printStackTrace();
             }
-        } else if (msg.substring(0, 6).equals("title:")) {
+        } else if (msg.length() >= 6 && msg.substring(0, 6).equals("title:")) {
         	title = msg.substring(6);
         } else if (msg.equals("end")) {
             try {
@@ -52,7 +52,9 @@ public class FileUploaderWebSocket {
                 session.getRemote().sendString("complete");
                 
                 Heap heap = Heap.getInstanceFor(null);
-                heap.getImages().add(heap.new Image(title));
+                Heap.Image newImage = heap.new Image(title);
+                heap.getImages().add(newImage);
+                newImage.getFiles().add(newImage.new File(fileName, "image/jpeg"));	// TODO Get actual type
             } catch (IOException e) {       
                 e.printStackTrace();
             }

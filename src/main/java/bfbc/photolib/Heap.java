@@ -70,7 +70,11 @@ public class Heap {
 				Heap.this.reportChange(path() + "/" + item, value);
 			}
 			protected String path() {
-				return Image.this.path() + "/files[" + Image.this.files.indexOf(this) + "]";
+				int index = Image.this.files.indexOf(this);
+				if (index == -1) {
+					throw new RuntimeException("File object not found inside Image object");
+				}
+				return Image.this.path() + "/files[" + index + "]";
 			}
 			public String getName() {
 				return name;
@@ -94,15 +98,24 @@ public class Heap {
 		}
 		
 		protected String path() {
-			return Heap.this.path() + "/images[" + Heap.this.images.indexOf(this) + "]";
+			int index = Heap.this.images.indexOf(this);
+			if (index == -1) {
+				throw new RuntimeException("Image object not found inside Heap object");
+			}
+			return Heap.this.path() + "/images[" + index + "]";
 		}
+		
 		protected void reportChange(String item, String value) {
 			Heap.this.reportChange(path() + "/" + item, value);
 		}
 
 		@Expose
-		private final List<File> files = new ReportingArrayList<>(path() + "/files");
-
+		private final List<File> files = new ReportingArrayList<File>() {
+			String path() {
+				return Image.this.path() + "/files";
+			}
+		};
+		
 		@Expose
 		private String title;
 
@@ -122,10 +135,15 @@ public class Heap {
 		public Image(String title) {
 			this.title = title;
 		}
+
 	}
 
 	@Expose
-	private final List<Image> images = new ReportingArrayList<>(path() + "/images");
+	private final List<Image> images = new ReportingArrayList<Image>() {
+		String path() {
+			return Heap.this.path() + "/images";
+		}
+	};
 	
 	protected String path() {
 		return "/heap";
@@ -148,12 +166,12 @@ public class Heap {
 				List<Element> imageElements = root.getChildren("image");
 				for (Element imgEl : imageElements) {
 					Image img = new Image(imgEl.getAttributeValue("title"));
+					this.getImages().add(img);
 					List<Element> fileElements = imgEl.getChildren("file");
 					for (Element fileEl : fileElements) {
 						File file = img.new File(fileEl.getAttributeValue("name"), fileEl.getAttributeValue("type"));
 						img.getFiles().add(file);
 					}
-					this.getImages().add(img);
 				}
 			} else {
 				throw new RuntimeException("The root element should be <heap>");
@@ -163,37 +181,33 @@ public class Heap {
 		}
 	}
 	
-	public class ReportingArrayList<T> extends ArrayList<T> {
-		private String path;
-		
-		public ReportingArrayList(String path) {
-			this.path = path;
-		}
+	public abstract class ReportingArrayList<T> extends ArrayList<T> {
+		abstract String path();
 		
 		@Override
 		public boolean add(T obj) {
 			boolean res = super.add(obj);
-			Heap.this.reportChange(path + "/add", gson.toJson(obj));
+			Heap.this.reportChange(path() + "/add", gson.toJson(obj));
 			return res;
 		}
 		
 		@Override
 		public void add(int index, T element) {
 			super.add(index, element);
-			Heap.this.reportChange(path + "/add(" + index + ")", gson.toJson(element));
+			Heap.this.reportChange(path() + "/add(" + index + ")", gson.toJson(element));
 		}
 		
 		@Override
 		public boolean addAll(Collection<? extends T> c) {
 			boolean res = super.addAll(c);
-			Heap.this.reportChange(path + "/addAll", gson.toJson(c));
+			Heap.this.reportChange(path() + "/addAll", gson.toJson(c));
 			return res;
 		}
 		
 		@Override
 		public void clear() {
 			super.clear();
-			Heap.this.reportChange(path + "/clear", "");
+			Heap.this.reportChange(path() + "/clear", "");
 		}
 		
 		@Override
@@ -201,7 +215,7 @@ public class Heap {
 			int index = this.indexOf(o);
 			if (index != -1) {
 				boolean res = super.remove(o);
-				Heap.this.reportChange(path + "/remove(" + index + ")", "");
+				Heap.this.reportChange(path() + "/remove(" + index + ")", "");
 				return res;
 			} else {
 				return false;
@@ -211,14 +225,14 @@ public class Heap {
 		@Override
 		public boolean addAll(int index, Collection<? extends T> c) {
 			boolean res = super.addAll(index, c);
-			Heap.this.reportChange(path + "/addAll(" + index + ")", gson.toJson(c));
+			Heap.this.reportChange(path() + "/addAll(" + index + ")", gson.toJson(c));
 			return res;
 		}
 		
 		@Override
 		public T remove(int index) {
 			T res = super.remove(index);
-			Heap.this.reportChange(path + "/remove(" + index + ")", "");
+			Heap.this.reportChange(path() + "/remove(" + index + ")", "");
 			return res;
 		}
 		
@@ -231,7 +245,7 @@ public class Heap {
 					indices.add(index);
 				}
 			}
-			Heap.this.reportChange(path + "/removeAll(" + gson.toJson(indices) + ")", "");
+			Heap.this.reportChange(path() + "/removeAll(" + gson.toJson(indices) + ")", "");
 			return super.removeAll(c);
 		}
 		

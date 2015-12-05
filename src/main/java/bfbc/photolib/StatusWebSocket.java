@@ -43,6 +43,7 @@ public class StatusWebSocket implements HeapChangeListener {
 	@Override
 	public void reportChange(String path, String newValue) {
 		try {
+			System.out.println("Sending change request: " + path + "=" + newValue);
 			broadcastUpdate(URLEncoder.encode(path, "UTF-8") + "=" + URLEncoder.encode(newValue, "UTF-8"));
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException("Impossible situation", e);
@@ -51,7 +52,6 @@ public class StatusWebSocket implements HeapChangeListener {
 	
 	private void sendUpdate(Session s, String request) throws IOException {
 		s.getRemote().sendString("update:" + request);
-		System.out.println("request: " + request);
 	}
 
 	private void sendFiles(Session s, List<String> fileNames) {

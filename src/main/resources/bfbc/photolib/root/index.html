@@ -21,16 +21,23 @@
 				
 				output.createItem = function(index, image) {
 					var imgId = "images[" + index + "]";
-					var file = image.files[0];
-				
+					
 					var picImgTag = document.createElement("img");
 					picImgTag.setAttribute("id", imgId + ".picture");
 					picImgTag.setAttribute("style", "max-width: 200pt; max-height: 200pt;");
 					
-					picImgTag.setSrc = function(name) {
-						picImgTag.setAttribute("src", "image/" + name);
+					picImgTag.setFile = function(file) {
+						this.file = file;
+						this.setAttribute("src", "image/" + file.name);
 					};
-					picImgTag.setSrc(file.name);
+					picImgTag.getFile = function() {
+						return this.file;
+					}
+
+					if (image.files.length > 0) {
+						var file = image.files[0];
+						picImgTag.setFile(file);
+					}
 					
 					var titleTag = document.createElement("div");
 					titleTag.setAttribute("id", imgId + ".title");
@@ -95,19 +102,39 @@
 					    }
 					    path_items = path_items.splice(1); // removing 'images[...]'
 					    
-						var file_part = path_items[0]; // getting 'files[...]'
-						if (file_part.substring(0, 5) != 'files') {
-					    	throw "Only 'files' is supported under 'images[...]'";
-					    }
-					    path_items = path_items.splice(1); // removing 'files[...]'
-					    
-					    var field = path_items[0];
-					    if (field == "name") {
-					    	var picture = document.getElementById(image_part + ".picture");
-					    	if (picture == null) {
-					    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
+					    if (image_part == "images") {
+					    	if (path_items[0] == "add") {
+					    		var image = JSON.parse(decoded_val);
+					    		output.appendItem(image);
 					    	}
-							picture.setSrc(decoded_val);
+					    } else {
+							var file_part = path_items[0]; // getting 'files[...]'
+							if (file_part.substring(0, 5) != 'files') {
+						    	throw "Only 'files' is supported under 'images[...]'";
+						    }
+						    path_items = path_items.splice(1); // removing 'files[...]'
+						    
+						    if (file_part == "files") {
+						    	if (path_items[0] == "add") {
+							    	var picture = document.getElementById(image_part + ".picture");
+							    	if (picture == null) {
+							    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
+							    	}
+						    		var file = JSON.parse(decoded_val);
+									picture.setFile(file);
+						    	}
+						    }
+						    
+						    var field = path_items[0];
+						    if (field == "name") {
+						    	var picture = document.getElementById(image_part + ".picture");
+						    	var file = picture.getFile();
+						    	if (picture == null) {
+						    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
+						    	}
+						    	file.name = decoded_val;
+								picture.setFile(file);
+						    }
 					    }
 			    		
 			    	} else {
