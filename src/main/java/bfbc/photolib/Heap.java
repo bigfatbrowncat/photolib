@@ -1,6 +1,10 @@
 package bfbc.photolib;
 
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +18,8 @@ import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -23,6 +29,10 @@ import bfbc.photolib.Heap.Image.File;
 import bfbc.photolib.HeapChangeListener;
 
 public class Heap {
+	
+	private static final java.io.File HEAP_FILE = new java.io.File("data/heap.xml");
+	private static Heap instance = new Heap(HEAP_FILE);
+
 	private Gson gson;
 	private final Set<WeakReference<HeapChangeListener>> listeners = new HashSet<>();
 	
@@ -30,10 +40,10 @@ public class Heap {
 		return listeners;
 	}
 	
-	protected boolean isConnected(HeapChangeListener webSocket) {
+	protected boolean isConnected(HeapChangeListener listener) {
 		for (WeakReference<HeapChangeListener> ref : listeners) {
 			HeapChangeListener s = ref.get();
-			if (s == webSocket) {
+			if (s == listener) {
 				return true;
 			}
 		}
@@ -47,9 +57,9 @@ public class Heap {
 				s.reportChange(path, newValue); //.broadcastUpdate(request);
 			}
 		}
+		save(HEAP_FILE);
 	}
 	
-	private static Heap instance = new Heap(new java.io.File("data/heap.xml"));
 	
 	public static Heap getInstanceFor(HeapChangeListener webSocket) {
 		if (webSocket != null && !instance.isConnected(webSocket)) {
@@ -157,9 +167,9 @@ public class Heap {
     	GsonBuilder builder = new GsonBuilder();
     	builder.excludeFieldsWithoutExposeAnnotation();
     	gson = builder.create();
+		SAXBuilder saxBuilder = new SAXBuilder();
 		
 		try {
-			SAXBuilder saxBuilder = new SAXBuilder();
 			Document doc = saxBuilder.build(xmlSource);
 			Element root = doc.getRootElement();
 			if (root.getName().equals("heap")) {
@@ -178,6 +188,34 @@ public class Heap {
 			}
 		} catch (JDOMException | IOException e) {
 			throw new RuntimeException("Problem loading or parsing the " + xmlSource.getAbsolutePath() + " file", e);
+		}
+	}
+	
+	void save(java.io.File xmlTarget) {
+		try {
+			Document doc = new Document();
+			Element root = new Element("heap");
+			doc.setRootElement(root);
+			
+			for (Image img : getImages()) {
+				Element imgTag = new Element("image");
+				imgTag.setAttribute("title", img.getTitle());
+				for (File file : img.getFiles()) {
+					Element fileTag = new Element("file");
+					fileTag.setAttribute("name", file.getName());
+					fileTag.setAttribute("type", file.getType());
+					imgTag.addContent(fileTag);
+				}
+				root.addContent(imgTag);
+			}
+			
+			XMLOutputter xmlOutput = new XMLOutputter();
+			xmlOutput.setFormat(Format.getPrettyFormat());
+			xmlOutput.output(doc, new BufferedWriter(new OutputStreamWriter(
+				    new FileOutputStream(HEAP_FILE), "UTF-8"
+			)));
+		} catch (IOException e) {
+			throw new RuntimeException("Problem saving " + xmlTarget.getAbsolutePath() + " file", e);
 		}
 	}
 	
