@@ -1,7 +1,5 @@
 package bfbc.photolib;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -13,8 +11,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import bfbc.photolib.Heap.ChangeRequest;
+import bfbc.photolib.Heap.ClientUpdateRequest;
 
 @WebSocket
 public class StatusWebSocket implements HeapChangeListener {
@@ -38,16 +36,13 @@ public class StatusWebSocket implements HeapChangeListener {
 		return fileNames;
 	}
 	
-	//private static List<String> strings = new ArrayList<String>();
+	
 	
 	@Override
-	public void reportChange(String path, String newValue) {
-		try {
-			System.out.println("Sending change request: " + path + "=" + newValue);
-			broadcastUpdate(URLEncoder.encode(path, "UTF-8") + "=" + URLEncoder.encode(newValue, "UTF-8"));
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException("Impossible situation", e);
-		}
+	public void reportChange(ClientUpdateRequest cr) {
+		String req = cr.toJson();
+		System.out.println("Sending update request: " + req);
+		broadcastUpdate(req);
 	}
 	
 	private void sendUpdate(Session s, String request) throws IOException {
@@ -105,7 +100,8 @@ public class StatusWebSocket implements HeapChangeListener {
 
     @OnWebSocketMessage
     public void message(Session session, String message) throws IOException {
-    	
+    	Heap heap = Heap.getInstanceFor(this);
+    	heap.applyChange(ChangeRequest.fromJson(message));
     }
 
 }

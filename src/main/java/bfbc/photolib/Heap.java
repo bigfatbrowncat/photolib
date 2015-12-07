@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -30,10 +31,16 @@ import bfbc.photolib.HeapChangeListener;
 
 public class Heap {
 	
+	private static Gson gson;
+	static {
+    	GsonBuilder builder = new GsonBuilder();
+    	builder.excludeFieldsWithoutExposeAnnotation();
+    	gson = builder.create();
+	}
+
 	private static final java.io.File HEAP_FILE = new java.io.File("data/heap.xml");
 	private static Heap instance = new Heap(HEAP_FILE);
 
-	private Gson gson;
 	private final Set<WeakReference<HeapChangeListener>> listeners = new HashSet<>();
 	
 	public Set<WeakReference<HeapChangeListener>> getListeners() {
@@ -50,11 +57,12 @@ public class Heap {
 		return false;
 	}
 
-	protected void reportChange(String path, String newValue) {
+	protected void reportChange(String command, Object... arguments) {
+		ClientUpdateRequest cr = new ClientUpdateRequest(command, arguments);
 		for (WeakReference<HeapChangeListener> ref : listeners) {
 			HeapChangeListener s = ref.get();
 			if (s != null) {
-				s.reportChange(path, newValue); //.broadcastUpdate(request);
+				s.reportChange(cr);
 			}
 		}
 		save(HEAP_FILE);
@@ -68,9 +76,11 @@ public class Heap {
 		return instance;
 	}
 	
-	public class Image {
-		public class File {
+	public class Image implements ItemWithId {
+		public class File implements ItemWithId {
 			
+			@Expose
+			private int id;
 			@Expose
 			private String name;
 			@Expose
@@ -80,11 +90,7 @@ public class Heap {
 				Heap.this.reportChange(path() + "/" + item, value);
 			}
 			protected String path() {
-				int index = Image.this.files.indexOf(this);
-				if (index == -1) {
-					throw new RuntimeException("File object not found inside Image object");
-				}
-				return Image.this.path() + "/files[" + index + "]";
+				return Image.this.path() + "/files[" + id + "]";
 			}
 			public String getName() {
 				return name;
@@ -100,19 +106,23 @@ public class Heap {
 				this.type = type;
 				reportChange("type", type);
 			}
-			
-			public File(String name, String type) {
+			public File(int id, String name, String type) {
+				this.id = id;
 				this.name = name;
 				this.type = type;
+			}
+			public File(String name, String type) {
+				this(Image.this.getFiles().getFreeId(), name, type);
+			}
+			
+			@Override
+			public int getId() {
+				return id;
 			}
 		}
 		
 		protected String path() {
-			int index = Heap.this.images.indexOf(this);
-			if (index == -1) {
-				throw new RuntimeException("Image object not found inside Heap object");
-			}
-			return Heap.this.path() + "/images[" + index + "]";
+			return Heap.this.path() + "/images[" + id + "]";
 		}
 		
 		protected void reportChange(String item, String value) {
@@ -120,12 +130,14 @@ public class Heap {
 		}
 
 		@Expose
-		private final List<File> files = new ReportingArrayList<File>() {
+		private final ReportingArrayList<File> files = new ReportingArrayList<File>() {
 			String path() {
 				return Image.this.path() + "/files";
 			}
 		};
 		
+		@Expose
+		private int id;
 		@Expose
 		private String title;
 
@@ -138,18 +150,26 @@ public class Heap {
 			reportChange("title", title);
 		}
 
-		public List<File> getFiles() {
+		public ReportingArrayList<File> getFiles() {
 			return files;
 		}
 		
-		public Image(String title) {
+		public Image(int id, String title) {
+			this.id = id;
 			this.title = title;
 		}
+		public Image(String title) {
+			this(Heap.this.getImages().getFreeId(), title);
+		}
 
+		@Override
+		public int getId() {
+			return id;
+		}
 	}
 
 	@Expose
-	private final List<Image> images = new ReportingArrayList<Image>() {
+	private final ReportingArrayList<Image> images = new ReportingArrayList<Image>() {
 		String path() {
 			return Heap.this.path() + "/images";
 		}
@@ -159,14 +179,11 @@ public class Heap {
 		return "/heap";
 	}
 	
-	public List<Image> getImages() {
+	public ReportingArrayList<Image> getImages() {
 		return images;
 	}
 	
 	private Heap(java.io.File xmlSource) {
-    	GsonBuilder builder = new GsonBuilder();
-    	builder.excludeFieldsWithoutExposeAnnotation();
-    	gson = builder.create();
 		SAXBuilder saxBuilder = new SAXBuilder();
 		
 		try {
@@ -175,11 +192,11 @@ public class Heap {
 			if (root.getName().equals("heap")) {
 				List<Element> imageElements = root.getChildren("image");
 				for (Element imgEl : imageElements) {
-					Image img = new Image(imgEl.getAttributeValue("title"));
+					Image img = new Image(Integer.parseInt(imgEl.getAttributeValue("id")), imgEl.getAttributeValue("title"));
 					this.getImages().add(img);
 					List<Element> fileElements = imgEl.getChildren("file");
 					for (Element fileEl : fileElements) {
-						File file = img.new File(fileEl.getAttributeValue("name"), fileEl.getAttributeValue("type"));
+						File file = img.new File(Integer.parseInt(fileEl.getAttributeValue("id")), fileEl.getAttributeValue("name"), fileEl.getAttributeValue("type"));
 						img.getFiles().add(file);
 					}
 				}
@@ -200,10 +217,12 @@ public class Heap {
 			for (Image img : getImages()) {
 				Element imgTag = new Element("image");
 				imgTag.setAttribute("title", img.getTitle());
+				imgTag.setAttribute("id", String.valueOf(img.getId()));
 				for (File file : img.getFiles()) {
 					Element fileTag = new Element("file");
 					fileTag.setAttribute("name", file.getName());
 					fileTag.setAttribute("type", file.getType());
+					fileTag.setAttribute("id", String.valueOf(file.getId()));
 					imgTag.addContent(fileTag);
 				}
 				root.addContent(imgTag);
@@ -211,50 +230,58 @@ public class Heap {
 			
 			XMLOutputter xmlOutput = new XMLOutputter();
 			xmlOutput.setFormat(Format.getPrettyFormat());
-			xmlOutput.output(doc, new BufferedWriter(new OutputStreamWriter(
-				    new FileOutputStream(HEAP_FILE), "UTF-8"
-			)));
+			xmlOutput.output(doc, new BufferedWriter(
+					new OutputStreamWriter(new FileOutputStream(HEAP_FILE), "UTF-8")
+			));
 		} catch (IOException e) {
 			throw new RuntimeException("Problem saving " + xmlTarget.getAbsolutePath() + " file", e);
 		}
 	}
 	
-	public abstract class ReportingArrayList<T> extends ArrayList<T> {
+	public interface ItemWithId {
+		int getId();
+	}
+	
+	public abstract class ReportingArrayList<T extends ItemWithId> extends ArrayList<T> {
 		abstract String path();
 		
 		@Override
 		public boolean add(T obj) {
 			boolean res = super.add(obj);
-			Heap.this.reportChange(path() + "/add", gson.toJson(obj));
+			Heap.this.reportChange(path() + "/add", obj);
 			return res;
 		}
 		
 		@Override
 		public void add(int index, T element) {
 			super.add(index, element);
-			Heap.this.reportChange(path() + "/add(" + index + ")", gson.toJson(element));
+			Heap.this.reportChange(path() + "/add", index, element);
 		}
 		
 		@Override
 		public boolean addAll(Collection<? extends T> c) {
 			boolean res = super.addAll(c);
-			Heap.this.reportChange(path() + "/addAll", gson.toJson(c));
+			Heap.this.reportChange(path() + "/addAll", c);
 			return res;
 		}
 		
 		@Override
 		public void clear() {
 			super.clear();
-			Heap.this.reportChange(path() + "/clear", "");
+			Heap.this.reportChange(path() + "/clear");
 		}
 		
 		@Override
 		public boolean remove(Object o) {
-			int index = this.indexOf(o);
-			if (index != -1) {
-				boolean res = super.remove(o);
-				Heap.this.reportChange(path() + "/remove(" + index + ")", "");
-				return res;
+			if (o instanceof ItemWithId && this.contains(o)) {
+				int index = ((T)o).getId();
+				if (index != -1) {
+					boolean res = super.remove(o);
+					Heap.this.reportChange(path() + "/remove", index);
+					return res;
+				} else {
+					return false;
+				}
 			} else {
 				return false;
 			}
@@ -263,14 +290,14 @@ public class Heap {
 		@Override
 		public boolean addAll(int index, Collection<? extends T> c) {
 			boolean res = super.addAll(index, c);
-			Heap.this.reportChange(path() + "/addAll(" + index + ")", gson.toJson(c));
+			Heap.this.reportChange(path() + "/addAll", index, c);
 			return res;
 		}
 		
 		@Override
 		public T remove(int index) {
 			T res = super.remove(index);
-			Heap.this.reportChange(path() + "/remove(" + index + ")", "");
+			Heap.this.reportChange(path() + "/remove", index);
 			return res;
 		}
 		
@@ -283,7 +310,7 @@ public class Heap {
 					indices.add(index);
 				}
 			}
-			Heap.this.reportChange(path() + "/removeAll(" + gson.toJson(indices) + ")", "");
+			Heap.this.reportChange(path() + "/removeAll", indices);
 			return super.removeAll(c);
 		}
 		
@@ -302,10 +329,87 @@ public class Heap {
 			throw new RuntimeException("Unimplemented");
 		}
 		
+		T findById(int id) {
+			for (T item : this) {
+				if (item.getId() == id) return item; 
+			}
+			return null;
+		}
+		
+		public int getFreeId() {
+			int res = 0;
+			for (T item : this) {
+				if (item.getId() == res) res++; 
+			}
+			return res;
+		}
 		
 	}
 	
 	public String toJson() {
 		return gson.toJson(this);
+	}
+	
+	public class ClientUpdateRequest {
+		@Expose
+		private String command;
+		@Expose
+		private Object[] arguments;
+		
+		public String getCommand() {
+			return command;
+		}
+		public Object[] getArguments() {
+			return arguments.clone();
+		}
+		public ClientUpdateRequest(String command, Object[] arguments) {
+			super();
+			this.command = command;
+			this.arguments = arguments;
+		}
+		
+		public String toJson() {
+			return gson.toJson(this);
+		}
+	}
+	
+	public static class ChangeRequest {
+		@Expose
+		private String command;
+		@Expose
+		private String[] arguments;
+
+		public static ChangeRequest fromJson(String json) {
+			return gson.fromJson(json, ChangeRequest.class);
+		}
+	}
+
+	public void applyChange(ChangeRequest cr) {
+		List<String> splitCmd = Arrays.asList(cr.command.split("/"));
+		if (!splitCmd.get(0).equals("")) {
+			throw new RuntimeException("Invalid change request: " + cr.command);
+		}
+		
+		if (!splitCmd.get(1).equals("heap")) {
+			throw new RuntimeException("Invalid change request: " + cr.command);
+		}
+		
+		if (splitCmd.get(2).equals("images")) {
+			if (splitCmd.get(3).equals("remove")) {
+				int id = Integer.parseInt(cr.arguments[0]);
+				Image byId = getImages().findById(id);
+				for (File f : byId.getFiles()) {
+					String fileName = f.getName();
+					java.io.File file = new java.io.File("data/" + fileName);
+					file.delete();
+				}
+				
+				getImages().remove(byId);
+			} else {
+				throw new RuntimeException("Invalid change request: " + cr.command);
+			}
+		} else {
+			throw new RuntimeException("Invalid change request: " + cr.command);
+		}
 	}
 }
