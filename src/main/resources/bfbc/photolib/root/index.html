@@ -8,6 +8,7 @@
 			var imageList = {};
 			var websocket;
 			var output;
+			var selectedImage;
 		
 			function init() {
 			    output = document.getElementById("output");
@@ -51,6 +52,10 @@
 					titleTag.setAttribute("class", "image-title");
 					titleTag.innerHTML = image.title;
 					
+					titleTag.addEventListener("focus", function() {
+						imageTag.selectItem();
+					});
+					
 					var titleContainerTag = document.createElement("div");
 					titleContainerTag.setAttribute("id", imgId + ".titlecontainer");
 					titleContainerTag.setAttribute("class", "image-title-container");
@@ -58,12 +63,25 @@
 
 
 					var imageTag = document.createElement("div");
+					imageTag.setAttribute("tabindex", index);	// TODO Calculate correct tabindex
 					imageTag.setAttribute("id", imgId);
 					imageTag.setAttribute("class", "image");
 					
 					imageTag.appendChild(picImgTag);
 					imageTag.appendChild(titleContainerTag);
 					imageTag.appendChild(deleteButtonTag);
+					
+					imageTag.selectItem = function() {
+						if (selectedImage != null) {
+							selectedImage.className = "image";
+						}
+						selectedImage = imageTag;
+						imageTag.className = "image image-selected";
+					}
+					
+					imageTag.addEventListener("focus", function() {
+						titleTag.focus();
+					});
 					
 					return imageTag;
 				}
@@ -189,10 +207,17 @@
 			    border-width: 1pt;
 			    border-color: rgba(0,0,0,0.0);
 			}
+			
 			.image:hover {
 			    background: linear-gradient(rgba(0,0,0,0.03), rgba(0,0,0,0.05));
 			    border-radius: 4pt;
 			    border-color: rgba(0,0,0,0.06);
+			}
+			
+			.image-selected {
+			    background: linear-gradient(rgba(0,0,0,0.06), rgba(0,0,0,0.1));
+			    border-radius: 4pt;
+			    border-color: rgba(0,0,0,0.11);
 			}
 			
 			.image-picture {
@@ -237,7 +262,7 @@
 			    height: 20pt;
 			    background: transparent;
 			    border-width: 0;
-			    background-size: 13pt;
+			    background-size: 14pt;
 			    background-repeat: no-repeat;
 			    background-position: center;
 			    background-image: url("cross.svg");
@@ -254,7 +279,9 @@
 			.image > .image-deleteButton {
 				visibility: hidden;
 			}
-			.image:hover > .image-deleteButton {
+
+			.image:hover > .image-deleteButton,
+			.image-selected > .image-deleteButton {
 				visibility: visible;
 			}
 			
