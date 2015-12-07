@@ -55,6 +55,9 @@
 					titleTag.addEventListener("focus", function() {
 						imageTag.selectItem();
 					});
+					titleTag.addEventListener("input", function() {
+						websocket.send(JSON.stringify({"command":"/heap/" + imgId + "/title", "arguments":[titleTag.innerHTML]}));
+					});
 					
 					var titleContainerTag = document.createElement("div");
 					titleContainerTag.setAttribute("id", imgId + ".titlecontainer");
@@ -119,8 +122,8 @@
 				    	imageList = JSON.parse(evt.data.substring(5));
 						output.appendItems(imageList);
 			    	} else if (evt.data.substring(0, 7) == "update:") {
-			    		var changeRequest = JSON.parse(evt.data.substring(7));
-			    		var path_items = changeRequest.command.split("/");
+			    		var updateRequest = JSON.parse(evt.data.substring(7));
+			    		var path_items = updateRequest.command.split("/");
 			    		
 					    if (path_items[0] == "") { 
 					    	path_items = path_items.splice(1); // removing first '/'
@@ -142,39 +145,43 @@
 					    
 					    if (image_part == "images") {
 					    	if (path_items[0] == "add") {
-					    		var image = changeRequest.arguments[0];
+					    		var image = updateRequest.arguments[0];
 					    		output.appendItem(image);
 					    	} else if (path_items[0] == "remove") {
-					    		var index = changeRequest.arguments[0];
+					    		var index = updateRequest.arguments[0];
 					    		output.remove(index);
 					    	}
 					    } else {
-							var file_part = path_items[0]; // getting 'files[...]'
-							if (file_part.substring(0, 5) != 'files') {
-						    	throw "Only 'files' is supported under 'images[...]'";
-						    }
-						    path_items = path_items.splice(1); // removing 'files[...]'
-						    
-						    if (file_part == "files") {
-						    	if (path_items[0] == "add") {
+							var next_part = path_items[0];
+							if (next_part.substring(0, 5) == 'files') {
+							    path_items = path_items.splice(1); // removing 'files[...]'
+							    
+							    if (next_part == "files") {
+							    	if (path_items[0] == "add") {
+								    	var picture = document.getElementById(image_part + ".picture");
+								    	if (picture == null) {
+								    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
+								    	}
+							    		var file = updateRequest.arguments[0];
+										picture.setFile(file);
+							    	}
+							    }
+							    
+							    var field = path_items[0];
+							    if (field == "name") {
 							    	var picture = document.getElementById(image_part + ".picture");
+							    	var file = picture.getFile();
 							    	if (picture == null) {
 							    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
 							    	}
-						    		var file = changeRequest.arguments[0];
+							    	file.name = updateRequest.arguments[0];
 									picture.setFile(file);
+							    }
+						    } else if (next_part == 'title') {
+						    	var title = document.getElementById(image_part + ".title");
+						    	if (title.innerHTML != updateRequest.arguments[0]) {
+						    		title.innerHTML = updateRequest.arguments[0];
 						    	}
-						    }
-						    
-						    var field = path_items[0];
-						    if (field == "name") {
-						    	var picture = document.getElementById(image_part + ".picture");
-						    	var file = picture.getFile();
-						    	if (picture == null) {
-						    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
-						    	}
-						    	file.name = changeRequest.arguments[0];
-								picture.setFile(file);
 						    }
 					    }
 			    		

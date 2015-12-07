@@ -394,7 +394,16 @@ public class Heap {
 			throw new RuntimeException("Invalid change request: " + cr.command);
 		}
 		
-		if (splitCmd.get(2).equals("images")) {
+		if (splitCmd.get(2).startsWith("images[") && splitCmd.get(2).endsWith("]")) {
+			int id = Integer.parseInt(splitCmd.get(2).substring(7, splitCmd.get(2).length() - 1));
+			if (splitCmd.get(3).equals("title")) {
+				Image byId = getImages().findById(id);
+				String newTitle = cr.arguments[0];
+				byId.setTitle(newTitle);
+			} else {
+				throw new RuntimeException("Invalid change request: " + cr.command);
+			}
+		} else if (splitCmd.get(2).equals("images")) {
 			if (splitCmd.get(3).equals("remove")) {
 				int id = Integer.parseInt(cr.arguments[0]);
 				Image byId = getImages().findById(id);
