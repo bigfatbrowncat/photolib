@@ -5,6 +5,26 @@ function createImageTable(output) {
 		}				
 	}
 	
+    output.processUpdateRequest = function (path_items, arguments) {
+    	if (path_items[0].index == null) {
+	    	if (path_items[1].value == "add") {
+	    		var image = arguments[0];
+	    		this.appendItem(image);
+	    		return true;
+	    	} else if (path_items[1].value == "remove") {
+	    		var index = arguments[0];
+	    		this.remove(index);
+	    		return true;
+	    	}
+	    } else {
+	    	var imageId = 'images[' + path_items[0].index + ']';
+		    path_items = path_items.splice(1);
+		    var imageTag = document.getElementById(imageId);
+			
+		    return imageTag.processUpdateRequest(path_items, arguments);
+	    }
+	}
+    
 	output.createItem = function(index, image) {
 		var imgId = "images[" + index + "]";
 		
@@ -72,6 +92,32 @@ function createImageTable(output) {
 		imageTag.addEventListener("focus", function() {
 			imageTag.selectItem();
 		});
+		
+		imageTag.processUpdateRequest = function (path_items, arguments) {
+			if (path_items[0].value == 'files') {
+				if (path_items[0].index == null) {
+				    path_items = path_items.splice(1);
+				    
+			    	if (path_items[0].value == "add") {
+				    	var picture = document.getElementById(imageTag.id + ".picture");
+				    	if (picture == null) {
+				    		throw "Image with id '" + imageTag.id + ".picture" + "' not found on the page";
+				    	}
+			    		var file = arguments[0];
+						picture.setFile(file);
+			    		return true;
+			    	}
+				    
+				}
+				
+		    } else if (path_items[0].value == 'title') {
+		    	var title = document.getElementById(imageTag.id + ".title");
+		    	if (title.innerHTML != arguments[0]) {
+		    		title.innerHTML = arguments[0];
+		    	}
+	    		return;
+		    }
+		}
 		
 		// Raising the image when its picture has loaded
 		picImgTag.addEventListener("load", function() {

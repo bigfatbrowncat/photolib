@@ -18,6 +18,20 @@
 				openStatusSocket();
 			}
 			
+			function decodeCommand(command) {
+				var res = [];
+				var items = command.split("/");
+				for (var i = 0; i < items.length; i++) {
+					var re = /(.*)\[(\d+)\]/i;
+					var found = items[i].match(re);
+					if (found == null) {
+						res[i] = { value: items[i] };
+					} else {
+						res[i] = { value: found[1], index: found[2] };
+					}
+				}
+				return res;
+			}
 			
 			function openStatusSocket() {
 			    websocket = new WebSocket(webSocketAddress);
@@ -29,73 +43,30 @@
 			    	if (evt.data.substring(0, 5) == "init:") {
 				    	imageList = JSON.parse(evt.data.substring(5));
 						output.appendItems(imageList);
+						return;
 			    	} else if (evt.data.substring(0, 7) == "update:") {
 			    		var updateRequest = JSON.parse(evt.data.substring(7));
-			    		var path_items = updateRequest.command.split("/");
+			    		var path_items = decodeCommand(updateRequest.command);
 			    		
-					    if (path_items[0] == "") { 
+					    if (path_items[0].value == "") { 
 					    	path_items = path_items.splice(1); // removing first '/'
 					    } else {
 					    	throw "First path item should be empty";
 					    }
 					    
-					    if (path_items[0] == "heap") { 
+					    if (path_items[0].value == "heap") { 
 					    	path_items = path_items.splice(1); // removing 'heap'
 					    } else {
 					    	throw "Only paths started with 'heap' are supported";
 					    }
 					
-					    var image_part = path_items[0];	// getting 'images[...]'
-					    if (image_part.substring(0, 6) != 'images') {
-					    	throw "Only 'images' is supported under 'heap'";
-					    }
-					    path_items = path_items.splice(1); // removing 'images[...]'
-					    
-					    if (image_part == "images") {
-					    	if (path_items[0] == "add") {
-					    		var image = updateRequest.arguments[0];
-					    		output.appendItem(image);
-					    	} else if (path_items[0] == "remove") {
-					    		var index = updateRequest.arguments[0];
-					    		output.remove(index);
-					    	}
-					    } else {
-							var next_part = path_items[0];
-							if (next_part.substring(0, 5) == 'files') {
-							    path_items = path_items.splice(1); // removing 'files[...]'
-							    
-							    if (next_part == "files") {
-							    	if (path_items[0] == "add") {
-								    	var picture = document.getElementById(image_part + ".picture");
-								    	if (picture == null) {
-								    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
-								    	}
-							    		var file = updateRequest.arguments[0];
-										picture.setFile(file);
-							    	}
-							    }
-							    
-							    var field = path_items[0];
-							    if (field == "name") {
-							    	var picture = document.getElementById(image_part + ".picture");
-							    	var file = picture.getFile();
-							    	if (picture == null) {
-							    		throw "Image with id '" + image_part + ".picture" + "' not found on the page";
-							    	}
-							    	file.name = updateRequest.arguments[0];
-									picture.setFile(file);
-							    }
-						    } else if (next_part == 'title') {
-						    	var title = document.getElementById(image_part + ".title");
-						    	if (title.innerHTML != updateRequest.arguments[0]) {
-						    		title.innerHTML = updateRequest.arguments[0];
-						    	}
+					    if (path_items[0].value == 'images') {
+						    if (output.processUpdateRequest(path_items, updateRequest.arguments)) {
+						    	return;
 						    }
 					    }
-			    		
-			    	} else {
-			    		throw 'Invalid message from client: "' + evt.data + '"';
 			    	}
+			    	throw 'Invalid message from client: "' + evt.data + '"';
 			    };
 			    websocket.onerror = function(evt) {
 			    };
