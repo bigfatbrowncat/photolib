@@ -42,6 +42,7 @@
 					var deleteButtonTag = document.createElement("button");
 					deleteButtonTag.setAttribute("id", imgId + ".deleteButton");
 					deleteButtonTag.setAttribute("class", "image-deleteButton");
+					deleteButtonTag.innerHTML = "Erase";
 					deleteButtonTag.addEventListener("click", function() {
 						websocket.send(JSON.stringify({"command":"/heap/images/remove", "arguments":[index]}));
 					});
@@ -206,12 +207,12 @@
 			.image {
 			    position: relative;
 			    display: inline-block;
-			    margin: -1pt;
+			    margin: 1pt;
 			    padding: 5pt;
 			    width: 180pt;
 			    height: 190pt;
 			    border-style: solid;
-			    border-width: 1pt;
+			    border-width: 1px;
 			    border-color: rgba(0,0,0,0.0);
 			}
 			
@@ -258,29 +259,32 @@
 			    background: rgba(255, 255, 255, 0.8);
     			border-radius: 4pt;
     			display: inline-block;
+    			outline-style: solid;
+			    outline-width: 0px;
+			    outline-color: rgba(0, 0, 0, 0.6);
    			}
 
 			.image-deleteButton {
 			    margin: 5pt;
+			    padding: 3pt;
 			    position: absolute;
 			    right: 0;
 			    top: 0;
-			    width: 20pt;
-			    height: 20pt;
+			    width: 45pt;
+			    height: 18pt;
 			    background: transparent;
 			    border-width: 0;
-			    background-size: 14pt;
-			    background-repeat: no-repeat;
-			    background-position: center;
-			    background-image: url("cross.svg");
+			    background: rgba(255, 255, 255, 0.8) url("cross.svg") no-repeat scroll right center / 12pt auto;
+			    background-origin: content-box;
 			    border-style: solid;
-			    border-width: 1pt;
-			    border-color: rgba(0,0,0,0.0);
+			    border-width: 1px;
+			    border-color: rgba(0, 0, 0, 0.1);
+			    border-radius: 4pt;
+			    text-align: left;
 			}
 			
 			.image-deleteButton:hover {
-			    border-radius: 4pt;
-			    border-color: rgba(0,0,0,0.1);
+			    border-color: rgba(0,0,0,0.2);
 			}
 
 			.image > .image-deleteButton {
