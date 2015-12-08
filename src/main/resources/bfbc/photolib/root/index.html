@@ -1,113 +1,20 @@
 <html>
 	<head>
 		<script src="/js/tools.js"></script>
-		<script>
-			var webSocketAddress = buildWebSocketAddress("status");
-		</script>
+		<script src="/js/image-table.js"></script>
+		
 		<script>
 			var imageList = {};
 			var websocket;
 			var output;
 			var selectedImage;
+			var webSocketAddress;
 		
-			function init() {
+			function init()
+			{
+				webSocketAddress = buildWebSocketAddress("status");
 			    output = document.getElementById("output");
-			    
-			    output.clearImages = function() {
-					while (output.firstChild) {
-	 					output.removeChild(output.firstChild);
-					}				
-				}
-				
-				output.createItem = function(index, image) {
-					var imgId = "images[" + index + "]";
-					
-					var picImgTag = document.createElement("img");
-					picImgTag.setAttribute("id", imgId + ".picture");
-					picImgTag.setAttribute("class", "image-picture");
-					
-					picImgTag.setFile = function(file) {
-						this.file = file;
-						this.setAttribute("src", "image/" + file.name);
-					};
-					picImgTag.getFile = function() {
-						return this.file;
-					}
-
-					if (image.files.length > 0) {
-						var file = image.files[0];
-						picImgTag.setFile(file);
-					}
-
-					var deleteButtonTag = document.createElement("button");
-					deleteButtonTag.setAttribute("id", imgId + ".deleteButton");
-					deleteButtonTag.setAttribute("class", "image-deleteButton");
-					deleteButtonTag.innerHTML = "Erase";
-					deleteButtonTag.addEventListener("click", function() {
-						websocket.send(JSON.stringify({"command":"/heap/images/remove", "arguments":[index]}));
-					});
-					
-					var titleTag = document.createElement("span");
-					titleTag.setAttribute("id", imgId + ".title");
-					titleTag.setAttribute("contenteditable", "true");
-					titleTag.setAttribute("class", "image-title");
-					titleTag.innerHTML = image.title;
-					
-					titleTag.addEventListener("focus", function() {
-						imageTag.selectItem();
-					});
-					titleTag.addEventListener("input", function() {
-						websocket.send(JSON.stringify({"command":"/heap/" + imgId + "/title", "arguments":[titleTag.innerHTML]}));
-					});
-					
-					var titleContainerTag = document.createElement("div");
-					titleContainerTag.setAttribute("id", imgId + ".titlecontainer");
-					titleContainerTag.setAttribute("class", "image-title-container");
-					titleContainerTag.appendChild(titleTag);
-
-
-					var imageTag = document.createElement("div");
-					imageTag.setAttribute("tabindex", index);	// TODO Calculate correct tabindex
-					imageTag.setAttribute("id", imgId);
-					imageTag.setAttribute("class", "image");
-					
-					imageTag.appendChild(picImgTag);
-					imageTag.appendChild(titleContainerTag);
-					imageTag.appendChild(deleteButtonTag);
-					
-					imageTag.selectItem = function() {
-						if (selectedImage != null) {
-							selectedImage.className = "image";
-						}
-						selectedImage = imageTag;
-						imageTag.className = "image image-selected";
-					}
-					
-					imageTag.addEventListener("focus", function() {
-						imageTag.selectItem();
-					});
-					
-					return imageTag;
-				}
-				
-				output.appendItem = function(image) {
-					this.appendChild(this.createItem(image.id, image));
-				}
-				
-				output.appendItems = function(imageList) {
-					for (var index in imageList.images) {
-						var image = imageList.images[index];
-						this.appendItem(image);									
-					}
-				}
-				
-				output.remove = function (index) {
-					var imgId = "images[" + index + "]";
-				    var image = document.getElementById(imgId);
-
-					this.removeChild(image);
-				}
-				
+				createImageTable(output);
 				openStatusSocket();
 			}
 			
@@ -198,111 +105,7 @@
 
 			window.addEventListener("load", init, false);
 		</script>
-		<style>
-			body {
-			    margin: 0;
-			    padding: 8pt;
-			    background: #f0f0f0;
-			}
-			.image {
-			    position: relative;
-			    display: inline-block;
-			    margin: 1pt;
-			    padding: 5pt;
-			    width: 180pt;
-			    height: 190pt;
-			    border-style: solid;
-			    border-width: 1px;
-			    border-color: rgba(0,0,0,0.0);
-			    outline-style: none;
-			}
-			
-			.image:hover {
-			    background: linear-gradient(rgba(0,0,0,0.03), rgba(0,0,0,0.05));
-			    border-radius: 4pt;
-			    border-color: rgba(0,0,0,0.06);
-			}
-			
-			.image-selected {
-			    background: linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.07));
-			    border-radius: 4pt;
-			    border-color: rgba(0,0,0,0.15);
-			}
-			
-			.image-picture {
-			    box-shadow: 0 0px 3px rgba(0,0,0,0.3);
-			    max-width: 160pt;
-			    max-height: 160pt;
-			    position: absolute;
-			    top: 0;
-			    bottom: 15pt;
-			    left: 0;
-			    right: 0;
-			    margin: auto;
-			    border-width: 4pt;
-			    border-style: solid;
-			    border-color: white;
-			}
-			
-			.image-title-container {
-			    position: absolute;
-			    bottom: 0;
-			    text-align: center;
-			    width: 180pt;
-			    font-family: sans-serif;
-			    font-size: 80%;
-			    padding: 5pt 0;
-			    color: rgba(0,0,0,0.7);
-			}
-
-			.image-title {
-			    padding: 3pt 5pt;
-			    background: rgba(255, 255, 255, 0.8);
-    			border-radius: 4pt;
-    			display: inline-block;
-    			outline-style: none;
-   				border-width: 1px;
-   				border-style: solid;
-   				border-color: rgba(0, 0, 0, 0.0);
-   			}
-   			.image-title:focus {
-   				border-color: rgba(0, 0, 0, 0.3);
-   			}
-
-
-			.image-deleteButton {
-			    margin: 5pt;
-			    padding: 3pt;
-			    position: absolute;
-			    right: 0;
-			    top: 0;
-			    width: 45pt;
-			    height: 18pt;
-			    background: transparent;
-			    border-width: 0;
-			    background: rgba(255, 255, 255, 0.8) url("cross.svg") no-repeat scroll right center / 12pt auto;
-			    background-origin: content-box;
-			    border-style: solid;
-			    border-width: 1px;
-			    border-color: rgba(0, 0, 0, 0.1);
-			    border-radius: 4pt;
-			    text-align: left;
-			}
-			
-			.image-deleteButton:hover {
-			    border-color: rgba(0,0,0,0.2);
-			}
-
-			.image > .image-deleteButton {
-				visibility: hidden;
-			}
-
-			.image:hover > .image-deleteButton,
-			.image-selected > .image-deleteButton {
-				visibility: visible;
-			}
-			
-		</style>
+		<link rel="stylesheet" type="text/css" href="style/image-table.css" />
 </head>
 <body>
 	<div id="output"/>
