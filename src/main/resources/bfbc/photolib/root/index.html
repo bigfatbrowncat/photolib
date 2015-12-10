@@ -18,21 +18,6 @@
 				openStatusSocket();
 			}
 			
-			function decodeCommand(command) {
-				var res = [];
-				var items = command.split("/");
-				for (var i = 0; i < items.length; i++) {
-					var re = /(.*)\[(\d+)\]/i;
-					var found = items[i].match(re);
-					if (found == null) {
-						res[i] = { value: items[i] };
-					} else {
-						res[i] = { value: found[1], index: found[2] };
-					}
-				}
-				return res;
-			}
-			
 			function openStatusSocket() {
 			    websocket = new WebSocket(webSocketAddress);
 			    
@@ -46,26 +31,21 @@
 						return;
 			    	} else if (evt.data.substring(0, 7) == "update:") {
 			    		var updateRequest = JSON.parse(evt.data.substring(7));
-			    		var path_items = decodeCommand(updateRequest.command);
 			    		
-					    if (path_items[0].value == "") { 
-					    	path_items = path_items.splice(1); // removing first '/'
-					    } else {
-					    	throw "First path item should be empty";
-					    }
-					    
-					    if (path_items[0].value == "heap") { 
-					    	path_items = path_items.splice(1); // removing 'heap'
-					    } else {
-					    	throw "Only paths started with 'heap' are supported";
-					    }
-					
-					    if (path_items[0].value == 'images') {
-						    if (output.processUpdateRequest(path_items, updateRequest.arguments)) {
+					    if (updateRequest.command[0] == 'images') {
+					    	updateRequest.command = updateRequest.command.splice(1);
+						    if (output.processUpdateRequest(updateRequest.command, updateRequest.arguments)) {
 						    	return;
 						    }
 					    }
+			    	} else if (evt.data.substring(0, 6) == "error:") {
+			    		var error = JSON.parse(evt.data.substring(6));
+			    		var errorDiv = document.getElementById("error");
+			    		errorDiv.style.display = "block";
+			    		errorDiv.innerHTML = error.message;
+			    		return;
 			    	}
+
 			    	throw 'Invalid message from client: "' + evt.data + '"';
 			    };
 			    websocket.onerror = function(evt) {
@@ -79,7 +59,8 @@
 		<link rel="stylesheet" type="text/css" href="style/image-table.css" />
 </head>
 <body>
-	<div id="output"/>
+	<div id="error" class="errorMessage" style="display: none;"></div>
+	<div id="output"></div>
 </body>
 </html>  
         

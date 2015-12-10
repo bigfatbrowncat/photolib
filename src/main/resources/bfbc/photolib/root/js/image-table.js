@@ -6,18 +6,18 @@ function createImageTable(output) {
 	}
 	
     output.processUpdateRequest = function (path_items, arguments) {
-    	if (path_items[0].index == null) {
-	    	if (path_items[1].value == "add") {
-	    		var image = arguments[0];
-	    		this.appendItem(image);
-	    		return true;
-	    	} else if (path_items[1].value == "remove") {
-	    		var index = arguments[0];
-	    		this.remove(index);
-	    		return true;
-	    	}
-	    } else {
-	    	var imageId = 'images[' + path_items[0].index + ']';
+	
+    	if (path_items[0] == "add") {
+    		var image = arguments[0];
+    		this.appendItem(image);
+    		return true;
+    	} else if (path_items[0] == "remove") {
+    		var index = arguments[0];
+    		this.remove(index);
+    		return true;
+    	} else if (path_items[0] == "item") {
+		    path_items = path_items.splice(1);
+	    	var imageId = 'images[' + path_items[0] + ']';
 		    path_items = path_items.splice(1);
 		    var imageTag = document.getElementById(imageId);
 			
@@ -50,7 +50,13 @@ function createImageTable(output) {
 		deleteButtonTag.setAttribute("class", "image-deleteButton");
 		deleteButtonTag.innerHTML = "Erase";
 		deleteButtonTag.addEventListener("click", function() {
-			websocket.send(JSON.stringify({"command":"/heap/images/remove", "arguments":[index]}));
+			websocket.send(JSON.stringify({
+					"command": {
+						"items": ["images", "remove"]
+					},
+					"arguments": [index]
+				}
+			));
 		});
 		
 		var titleTag = document.createElement("span");
@@ -63,7 +69,14 @@ function createImageTable(output) {
 			imageTag.selectItem();
 		});
 		titleTag.addEventListener("input", function() {
-			websocket.send(JSON.stringify({"command":"/heap/" + imgId + "/title", "arguments":[titleTag.innerHTML]}));
+			websocket.send(JSON.stringify(
+				{
+					"command": {
+						"items": ["image", index, "title"] 
+					},
+					"arguments": [titleTag.innerHTML]
+				}
+			));
 		});
 		
 		var titleContainerTag = document.createElement("div");
@@ -94,28 +107,29 @@ function createImageTable(output) {
 		});
 		
 		imageTag.processUpdateRequest = function (path_items, arguments) {
-			if (path_items[0].value == 'files') {
-				if (path_items[0].index == null) {
-				    path_items = path_items.splice(1);
-				    
-			    	if (path_items[0].value == "add") {
-				    	var picture = document.getElementById(imageTag.id + ".picture");
-				    	if (picture == null) {
-				    		throw "Image with id '" + imageTag.id + ".picture" + "' not found on the page";
-				    	}
-			    		var file = arguments[0];
-						picture.setFile(file);
-			    		return true;
+			if (path_items[0] == 'files') {
+			    path_items = path_items.splice(1);
+			    
+		    	if (path_items[0] == "add") {
+			    	var picture = document.getElementById(imageTag.id + ".picture");
+			    	if (picture == null) {
+			    		throw "Image with id '" + imageTag.id + ".picture" + "' not found on the page";
 			    	}
-				    
-				}
-				
-		    } else if (path_items[0].value == 'title') {
+		    		var file = arguments[0];
+					picture.setFile(file);
+		    		return true;
+		    	} else if (path_items[0] == "item") {
+		    		
+		    		// Nothing here yet
+		    		
+		    	}
+ 
+		    } else if (path_items[0] == 'title') {
 		    	var title = document.getElementById(imageTag.id + ".title");
 		    	if (title.innerHTML != arguments[0]) {
 		    		title.innerHTML = arguments[0];
 		    	}
-	    		return;
+		    	return;
 		    }
 		}
 		

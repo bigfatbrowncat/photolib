@@ -101,7 +101,11 @@ public class StatusWebSocket implements HeapChangeListener {
     @OnWebSocketMessage
     public void message(Session session, String message) throws IOException {
     	Heap heap = Heap.getInstanceFor(this);
-    	heap.applyChange(ChangeRequest.fromJson(message));
+    	try {
+			heap.applyChange(ChangeRequest.fromJson(message));
+		} catch (InvalidChangeRequestException | CantParseRequestException e) {
+			session.getRemote().sendString("error:" + GlobalServices.getGson().toJson(e));
+		}
     }
 
 }

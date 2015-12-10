@@ -2,12 +2,11 @@ package bfbc.photolib;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -24,20 +23,13 @@ import org.jdom2.output.XMLOutputter;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.Expose;
 
 import bfbc.photolib.Heap.Image.File;
-import bfbc.photolib.HeapChangeListener;
 
 public class Heap {
 	
-	private static Gson gson;
-	static {
-    	GsonBuilder builder = new GsonBuilder();
-    	builder.excludeFieldsWithoutExposeAnnotation();
-    	gson = builder.create();
-	}
-
 	private static final java.io.File HEAP_FILE = new java.io.File("data/heap.xml");
 	private static Heap instance = new Heap(HEAP_FILE);
 
@@ -57,8 +49,8 @@ public class Heap {
 		return false;
 	}
 
-	protected void reportChange(String command, Object... arguments) {
-		ClientUpdateRequest cr = new ClientUpdateRequest(command, arguments);
+	protected void reportChange(Path command, Object... arguments) {
+		ClientUpdateRequest cr = new ClientUpdateRequest(command.toArray(), arguments);
 		for (WeakReference<HeapChangeListener> ref : listeners) {
 			HeapChangeListener s = ref.get();
 			if (s != null) {
@@ -87,10 +79,10 @@ public class Heap {
 			private String type;
 			
 			protected void reportChange(String item, String value) {
-				Heap.this.reportChange(path() + "/" + item, value);
+				Heap.this.reportChange(path().append(item), value);
 			}
-			protected String path() {
-				return Image.this.path() + "/files[" + id + "]";
+			protected Path path() {
+				return Image.this.files.path().append("item").append(String.valueOf(id));
 			}
 			public String getName() {
 				return name;
@@ -121,18 +113,24 @@ public class Heap {
 			}
 		}
 		
-		protected String path() {
-			return Heap.this.path() + "/images[" + id + "]";
+		protected Path path() {
+			return Heap.this.images.path().append("item").append(String.valueOf(id));
 		}
 		
 		protected void reportChange(String item, String value) {
-			Heap.this.reportChange(path() + "/" + item, value);
+			Heap.this.reportChange(path().append(item), value);
 		}
 
 		@Expose
 		private final ReportingArrayList<File> files = new ReportingArrayList<File>() {
-			String path() {
-				return Image.this.path() + "/files";
+			Path path() {
+				return Image.this.path().append("files");
+			}
+
+			@Override
+			void applyChange(ChangeRequest cr) {
+				// TODO Auto-generated method stub
+				
 			}
 		};
 		
@@ -166,17 +164,44 @@ public class Heap {
 		public int getId() {
 			return id;
 		}
+		
+		public void applyChange(ChangeRequest cr) throws InvalidChangeRequestException {
+			String item = cr.command.popFirst();
+			if (item.equals("title")) {
+				String newTitle = cr.arguments[0];
+				setTitle(newTitle);
+			} else {
+				throw new InvalidChangeRequestException(cr);
+			}
+		}
 	}
 
 	@Expose
 	private final ReportingArrayList<Image> images = new ReportingArrayList<Image>() {
-		String path() {
-			return Heap.this.path() + "/images";
+		Path path() {
+			return Heap.this.path().append("images");
+		}
+		
+		void applyChange(ChangeRequest cr) {
+			String item = cr.command.popFirst();
+			if (item.equals("remove")) {
+				int id = Integer.parseInt(cr.arguments[0]);
+				Image byId = getImages().findById(id);
+				for (File f : byId.getFiles()) {
+					String fileName = f.getName();
+					java.io.File file = new java.io.File("data/" + fileName);
+					file.delete();
+				}
+				
+				getImages().remove(byId);
+			} else {
+				throw new RuntimeException("Invalid change request: " + cr.command);
+			}
 		}
 	};
 	
-	protected String path() {
-		return "/heap";
+	protected Path path() {
+		return new Path();
 	}
 	
 	public ReportingArrayList<Image> getImages() {
@@ -231,10 +256,10 @@ public class Heap {
 			XMLOutputter xmlOutput = new XMLOutputter();
 			xmlOutput.setFormat(Format.getPrettyFormat());
 			xmlOutput.output(doc, new BufferedWriter(
-					new OutputStreamWriter(new FileOutputStream(HEAP_FILE), "UTF-8")
+					new OutputStreamWriter(new FileOutputStream(HEAP_FILE), StandardCharsets.UTF_8)
 			));
 		} catch (IOException e) {
-			throw new RuntimeException("Problem saving " + xmlTarget.getAbsolutePath() + " file", e);
+			throw new ServerException("Problem saving " + xmlTarget.getAbsolutePath() + " file", e);
 		}
 	}
 	
@@ -243,41 +268,42 @@ public class Heap {
 	}
 	
 	public abstract class ReportingArrayList<T extends ItemWithId> extends ArrayList<T> {
-		abstract String path();
-		
+		abstract Path path();
+		abstract void applyChange(ChangeRequest cr) throws InvalidChangeRequestException;
+
 		@Override
 		public boolean add(T obj) {
 			boolean res = super.add(obj);
-			Heap.this.reportChange(path() + "/add", obj);
+			Heap.this.reportChange(path().append("add"), obj);
 			return res;
 		}
 		
 		@Override
 		public void add(int index, T element) {
 			super.add(index, element);
-			Heap.this.reportChange(path() + "/add", index, element);
+			Heap.this.reportChange(path().append("add"), index, element);
 		}
 		
 		@Override
 		public boolean addAll(Collection<? extends T> c) {
 			boolean res = super.addAll(c);
-			Heap.this.reportChange(path() + "/addAll", c);
+			Heap.this.reportChange(path().append("addAll"), c);
 			return res;
 		}
 		
 		@Override
 		public void clear() {
 			super.clear();
-			Heap.this.reportChange(path() + "/clear");
+			Heap.this.reportChange(path().append("clear"));
 		}
 		
 		@Override
 		public boolean remove(Object o) {
 			if (o instanceof ItemWithId && this.contains(o)) {
-				int index = ((T)o).getId();
+				int index = ((ItemWithId)o).getId();
 				if (index != -1) {
 					boolean res = super.remove(o);
-					Heap.this.reportChange(path() + "/remove", index);
+					Heap.this.reportChange(path().append("remove"), index);
 					return res;
 				} else {
 					return false;
@@ -290,14 +316,14 @@ public class Heap {
 		@Override
 		public boolean addAll(int index, Collection<? extends T> c) {
 			boolean res = super.addAll(index, c);
-			Heap.this.reportChange(path() + "/addAll", index, c);
+			Heap.this.reportChange(path().append("addAll"), index, c);
 			return res;
 		}
 		
 		@Override
 		public T remove(int index) {
 			T res = super.remove(index);
-			Heap.this.reportChange(path() + "/remove", index);
+			Heap.this.reportChange(path().append("remove"), index);
 			return res;
 		}
 		
@@ -310,7 +336,7 @@ public class Heap {
 					indices.add(index);
 				}
 			}
-			Heap.this.reportChange(path() + "/removeAll", indices);
+			Heap.this.reportChange(path().append("removeAll"), indices);
 			return super.removeAll(c);
 		}
 		
@@ -347,78 +373,68 @@ public class Heap {
 	}
 	
 	public String toJson() {
-		return gson.toJson(this);
+		return GlobalServices.getGson().toJson(this);
 	}
 	
 	public class ClientUpdateRequest {
 		@Expose
-		private String command;
+		private String[] command;
 		@Expose
 		private Object[] arguments;
 		
-		public String getCommand() {
+		public String[] getCommand() {
 			return command;
 		}
 		public Object[] getArguments() {
 			return arguments.clone();
 		}
-		public ClientUpdateRequest(String command, Object[] arguments) {
+		public ClientUpdateRequest(String[] command, Object[] arguments) {
 			super();
 			this.command = command;
 			this.arguments = arguments;
 		}
 		
 		public String toJson() {
-			return gson.toJson(this);
+			return GlobalServices.getGson().toJson(this);
 		}
 	}
 	
 	public static class ChangeRequest {
 		@Expose
-		private String command;
+		private Path command;
 		@Expose
 		private String[] arguments;
 
-		public static ChangeRequest fromJson(String json) {
-			return gson.fromJson(json, ChangeRequest.class);
+		public static ChangeRequest fromJson(String json) throws CantParseRequestException {
+			try {
+				return GlobalServices.getGson().fromJson(json, ChangeRequest.class);
+			} catch (JsonSyntaxException e) {
+				throw new CantParseRequestException(json);
+			}
+		}
+		
+		@Override
+		public String toString() {
+			String res = "command: " + command.toString() + ", arguments: ";
+			String comma = "";
+			for (String s : arguments) {
+				res += comma + "\"" + s + "\"";
+				comma = ", ";
+			}
+			return res;
 		}
 	}
 
-	public void applyChange(ChangeRequest cr) {
-		List<String> splitCmd = Arrays.asList(cr.command.split("/"));
-		if (!splitCmd.get(0).equals("")) {
-			throw new RuntimeException("Invalid change request: " + cr.command);
-		}
-		
-		if (!splitCmd.get(1).equals("heap")) {
-			throw new RuntimeException("Invalid change request: " + cr.command);
-		}
-		
-		if (splitCmd.get(2).startsWith("images[") && splitCmd.get(2).endsWith("]")) {
-			int id = Integer.parseInt(splitCmd.get(2).substring(7, splitCmd.get(2).length() - 1));
-			if (splitCmd.get(3).equals("title")) {
-				Image byId = getImages().findById(id);
-				String newTitle = cr.arguments[0];
-				byId.setTitle(newTitle);
-			} else {
-				throw new RuntimeException("Invalid change request: " + cr.command);
-			}
-		} else if (splitCmd.get(2).equals("images")) {
-			if (splitCmd.get(3).equals("remove")) {
-				int id = Integer.parseInt(cr.arguments[0]);
-				Image byId = getImages().findById(id);
-				for (File f : byId.getFiles()) {
-					String fileName = f.getName();
-					java.io.File file = new java.io.File("data/" + fileName);
-					file.delete();
-				}
-				
-				getImages().remove(byId);
-			} else {
-				throw new RuntimeException("Invalid change request: " + cr.command);
-			}
-		} else {
-			throw new RuntimeException("Invalid change request: " + cr.command);
+	public void applyChange(ChangeRequest cr) throws InvalidChangeRequestException {
+		String item = cr.command.popFirst();
+		if (item.equals("image")) {
+			int id = Integer.parseInt(cr.command.popFirst());
+			Image byId = getImages().findById(id);
+			byId.applyChange(cr);
+		} else if (item.equals("images")) {
+			images.applyChange(cr);
 		}
 	}
+	
+	
 }
