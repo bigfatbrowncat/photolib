@@ -2,8 +2,6 @@ package bfbc.photolib;
 
 import com.google.gson.annotations.Expose;
 
-import bfbc.photolib.Heap.ChangeRequest;
-
 public class InvalidChangeRequestException extends Exception {
 	
 	private static final String MESSAGE = "Invalid request: ";

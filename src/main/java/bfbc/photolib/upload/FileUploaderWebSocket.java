@@ -1,5 +1,4 @@
 package bfbc.photolib.upload;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,11 +10,13 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
+import bfbc.photolib.File;
 import bfbc.photolib.Heap;
+import bfbc.photolib.Image;
 
 @WebSocket(maxBinaryMessageSize = 1024 * 1024 * 64 /* 64M */)
 public class FileUploaderWebSocket {
-    static File uploadedFile = null;
+    static java.io.File uploadedFile = null;
     static String fileName = null;
     static String title = null;
     static FileOutputStream fos = null;
@@ -37,7 +38,7 @@ public class FileUploaderWebSocket {
         System.out.println("got msg: " + msg);
         if (msg.length() >= 9 && msg.substring(0, 9).equals("filename:")) {
             fileName = msg.substring(9);
-            uploadedFile = new File(filePath + fileName);
+            uploadedFile = new java.io.File(filePath + fileName);
             try {
                 fos = new FileOutputStream(uploadedFile);
             } catch (FileNotFoundException e) {     
@@ -52,9 +53,9 @@ public class FileUploaderWebSocket {
                 session.getRemote().sendString("complete");
                 
                 Heap heap = Heap.getInstanceFor(null);
-                Heap.Image newImage = heap.new Image(title);
+                Image newImage = new Image(heap, heap.getImages(), title);
                 heap.getImages().add(newImage);
-                newImage.getFiles().add(newImage.new File(fileName, "image/jpeg"));	// TODO Get actual type
+                newImage.getFiles().add(new File(heap, newImage.getFiles(), fileName, "image/jpeg"));	// TODO Get actual type
             } catch (IOException e) {       
                 e.printStackTrace();
             }

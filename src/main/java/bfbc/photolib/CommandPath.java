@@ -4,20 +4,20 @@ import java.util.ArrayList;
 
 import com.google.gson.annotations.Expose;
 
-public class Path implements Cloneable {
+public class CommandPath implements Cloneable {
 	@Expose
 	private ArrayList<String> items = new ArrayList<>();
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	protected Path clone() {
-		Path p = new Path();
+	protected CommandPath clone() {
+		CommandPath p = new CommandPath();
 		p.items = (ArrayList<String>) items.clone();
 		return p;
 	}
 	
-	public Path append(String item) { 
-		Path newPath = clone();
+	public CommandPath append(String item) { 
+		CommandPath newPath = clone();
 		newPath.items.add(item); 
 		return newPath;
 	}
@@ -28,7 +28,7 @@ public class Path implements Cloneable {
 		return res;
 	}
 	
-	public Path() { 
+	public CommandPath() { 
 		
 	}
 	

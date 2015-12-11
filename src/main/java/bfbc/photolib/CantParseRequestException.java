@@ -2,8 +2,6 @@ package bfbc.photolib;
 
 import com.google.gson.annotations.Expose;
 
-import bfbc.photolib.Heap.ChangeRequest;
-
 public class CantParseRequestException extends Exception {
 	
 	private static final String MESSAGE = "Can't parse request: ";

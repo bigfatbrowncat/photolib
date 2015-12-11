@@ -11,7 +11,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-import bfbc.photolib.Heap.ChangeRequest;
 import bfbc.photolib.Heap.ClientUpdateRequest;
 
 @WebSocket
@@ -28,9 +27,9 @@ public class StatusWebSocket implements HeapChangeListener {
 	
 	private List<String> getFileNames() {
 		Heap heap = Heap.getInstanceFor(this);
-		List<Heap.Image> imgs = heap.getImages();
+		List<Image> imgs = heap.getImages();
 		ArrayList<String> fileNames = new ArrayList<>();
-		for (Heap.Image img : imgs) {
+		for (Image img : imgs) {
 			fileNames.add(img.getFiles().get(0).getName());
 		}
 		return fileNames;

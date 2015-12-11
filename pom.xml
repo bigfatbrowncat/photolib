@@ -2,11 +2,10 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.example</groupId>
-	<artifactId>hello-world</artifactId>
+	<groupId>bfbc.photolib</groupId>
 	<version>0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
-	<name>Jetty HelloWorld</name>
+	<name>PhotoLib Server</name>
 
 	<properties>
 		<jettyVersion>9.3.6.v20151106</jettyVersion>
@@ -58,4 +57,8 @@
 	        </plugin>
 		</plugins>
 	</build>
+	<artifactId>server</artifactId>
+	<organization>
+		<name>bigfatbrowncat studio</name>
+	</organization>
 </project>
