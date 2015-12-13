@@ -139,12 +139,13 @@ function createImageTable(imageTableNode) {
 			// Animating the picture
 			setTimeout(function() {
 				picImgTag.classList.add("in");
+				picImgTag.style.transform += " rotate(" + (Math.random() * 5 - 2.5) + "deg)";
 				
 				var k = picImgTag.naturalWidth / picImgTag.naturalHeight;
-				
+				var delta = 0.2;
 				var val;
-				if (k > 0.9 && k < 1.1) {
-					val = 0.9 + Math.abs(k - 1);
+				if (k > 1 - delta && k < 1 + delta) {
+					val = 1 - delta + Math.abs(k - 1);
 				} else {
 					val = 1;
 				}
