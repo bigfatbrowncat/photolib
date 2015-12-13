@@ -9,4 +9,7 @@
   <image title="Lain" id="56">
     <file name="other.jpg" type="image/jpeg" id="123" />
   </image>
+  <image title="Square Anna" id="0">
+    <file name="Снимок экрана 2015-11-23 в 1.05.13.png" type="image/jpeg" id="0" />
+  </image>
 </heap>

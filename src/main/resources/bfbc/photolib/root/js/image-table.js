@@ -1,11 +1,11 @@
-function createImageTable(output) {
-    output.clearImages = function() {
-		while (output.firstChild) {
-			output.removeChild(output.firstChild);
+function createImageTable(imageTableNode) {
+    imageTableNode.clearImages = function() {
+		while (imageTableNode.firstChild) {
+			imageTableNode.removeChild(imageTableNode.firstChild);
 		}				
 	}
 	
-    output.processUpdateRequest = function (path_items, arguments) {
+    imageTableNode.processUpdateRequest = function (path_items, arguments) {
 	
     	if (path_items[0] == "add") {
     		var image = arguments[0];
@@ -13,7 +13,7 @@ function createImageTable(output) {
     		return true;
     	} else if (path_items[0] == "remove") {
     		var index = arguments[0];
-    		this.remove(index);
+       		this.remove(index);
     		return true;
     	} else if (path_items[0] == "item") {
 		    path_items = path_items.splice(1);
@@ -25,7 +25,7 @@ function createImageTable(output) {
 	    }
 	}
     
-	output.createItem = function(index, image) {
+	imageTableNode.createItem = function(index, image) {
 		var imgId = "images[" + index + "]";
 		
 		var picImgTag = document.createElement("img");
@@ -48,7 +48,7 @@ function createImageTable(output) {
 		var deleteButtonTag = document.createElement("button");
 		deleteButtonTag.setAttribute("id", imgId + ".deleteButton");
 		deleteButtonTag.setAttribute("class", "image-deleteButton");
-		deleteButtonTag.innerHTML = "Erase";
+		//deleteButtonTag.innerHTML = "Erase";
 		deleteButtonTag.addEventListener("click", function() {
 			websocket.send(JSON.stringify({
 					"command": {
@@ -135,33 +135,56 @@ function createImageTable(output) {
 		
 		// Raising the image when its picture has loaded
 		picImgTag.addEventListener("load", function() {
-			picImgTag.classList.add("raised");
+			
+			// Animating the picture
+			setTimeout(function() {
+				picImgTag.classList.add("in");
+				
+				var k = picImgTag.naturalWidth / picImgTag.naturalHeight;
+				
+				var val;
+				if (k > 0.9 && k < 1.1) {
+					val = 0.9 + Math.abs(k - 1);
+				} else {
+					val = 1;
+				}
+				picImgTag.style.maxWidth = (val * 85) + "%";
+				picImgTag.style.maxHeight = (val * 80) + "%";
+				picImgTag.style.top = 0;
+				picImgTag.style.left = 0;
+			}, 500);
+			
 		});
 
-		// Animating the newcomer		
+		// Animating the image block		
 		setTimeout(function() {
-			imageTag.classList.add("raised");
+			imageTag.classList.add("in");
 		}, 10);
 		
 		return imageTag;
 	}
 	
-	output.appendItem = function(image) {
+	imageTableNode.appendItem = function(image) {
 		var imageTag = this.createItem(image.id, image);
 		this.appendChild(imageTag);
 	}
 	
-	output.appendItems = function(imageList) {
+	imageTableNode.appendItems = function(imageList) {
 		for (var index in imageList.images) {
 			var image = imageList.images[index];
 			this.appendItem(image);									
 		}
 	}
 	
-	output.remove = function (index) {
+	imageTableNode.remove = function (index) {
 		var imgId = "images[" + index + "]";
 	    var image = document.getElementById(imgId);
 
-		this.removeChild(image);
+	    // Animating the image out
+	    image.classList.add("out");
+	    // After the animation finished, removing the item
+	    setTimeout(function() {
+	    	imageTableNode.removeChild(image);
+		}, 500);
 	}
 }

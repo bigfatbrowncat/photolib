@@ -6,15 +6,15 @@
 		<script>
 			var imageList = {};
 			var websocket;
-			var output;
+			var imageTableNode;
 			var selectedImage;
 			var webSocketAddress;
 		
 			function init()
 			{
 				webSocketAddress = buildWebSocketAddress("status");
-			    output = document.getElementById("output");
-				createImageTable(output);
+			    imageTableNode = document.getElementById("imageTable");
+				createImageTable(imageTableNode);
 				openStatusSocket();
 			}
 			
@@ -27,14 +27,14 @@
 			    websocket.onmessage = function(evt) {
 			    	if (evt.data.substring(0, 5) == "init:") {
 				    	imageList = JSON.parse(evt.data.substring(5));
-						output.appendItems(imageList);
+						imageTableNode.appendItems(imageList);
 						return;
 			    	} else if (evt.data.substring(0, 7) == "update:") {
 			    		var updateRequest = JSON.parse(evt.data.substring(7));
 			    		
 					    if (updateRequest.command[0] == 'images') {
 					    	updateRequest.command = updateRequest.command.splice(1);
-						    if (output.processUpdateRequest(updateRequest.command, updateRequest.arguments)) {
+						    if (imageTableNode.processUpdateRequest(updateRequest.command, updateRequest.arguments)) {
 						    	return;
 						    }
 					    }
@@ -60,7 +60,7 @@
 </head>
 <body>
 	<div id="error" class="errorMessage" style="display: none;"></div>
-	<div id="output"></div>
+	<div id="imageTable"></div>
 </body>
 </html>  
         
