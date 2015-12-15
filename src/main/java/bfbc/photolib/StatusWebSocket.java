@@ -25,18 +25,6 @@ public class StatusWebSocket implements HeapChangeListener {
 		}
 	}
 	
-	private List<String> getFileNames() {
-		Heap heap = Heap.getInstanceFor(this);
-		List<Image> imgs = heap.getImages();
-		ArrayList<String> fileNames = new ArrayList<>();
-		for (Image img : imgs) {
-			fileNames.add(img.getFiles().get(0).getName());
-		}
-		return fileNames;
-	}
-	
-	
-	
 	@Override
 	public void reportChange(ClientUpdateRequest cr) {
 		String req = cr.toJson();
@@ -48,7 +36,7 @@ public class StatusWebSocket implements HeapChangeListener {
 		s.getRemote().sendString("update:" + request);
 	}
 
-	private void sendFiles(Session s, List<String> fileNames) {
+	private void sendInit(Session s) {
 		try {
 			String json = Heap.getInstanceFor(null).toJson();
 			s.getRemote().sendString("init:" + json);
@@ -71,25 +59,13 @@ public class StatusWebSocket implements HeapChangeListener {
 		}
 	}
 	
-	public void broadcastFiles() {		
-		List<String> fileNames = getFileNames();
-		
-		synchronized (Heap.getInstanceFor(this)) {
-    		List<Session> ss = new ArrayList<Session>(sessions);
-    		for (Session s : ss) {
-    			sendFiles(s, fileNames);
-    		}
-
-		}
-	}
-	
     // Store sessions if you want to, for example, broadcast a message to all users
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     
     @OnWebSocketConnect
     public void connected(Session session) {
         sessions.add(session);
-        sendFiles(session, getFileNames());
+        sendInit(session);
     }
 
     @OnWebSocketClose

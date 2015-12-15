@@ -74,7 +74,9 @@ public class Heap implements ChangesHandler {
 		
 		void applyChange(ChangeRequest cr) {
 			String item = cr.getCommand().popFirst();
-			if (item.equals("remove")) {
+			if (item.equals("add")) {
+				add(new Image(Heap.this, this, "New image"));
+			} else if (item.equals("remove")) {
 				int id = Integer.parseInt(cr.getArgument(0));
 				Image byId = getImages().findById(id);
 				for (File f : byId.getFiles()) {
@@ -83,7 +85,7 @@ public class Heap implements ChangesHandler {
 					file.delete();
 				}
 				
-				getImages().remove(byId);
+				remove(byId);
 			} else {
 				throw new RuntimeException("Invalid change request: " + cr.getCommand());
 			}

@@ -173,3 +173,43 @@ body {
 	visibility: visible;
 }
 
+.add-image {
+    position: relative;
+    display: inline-block;
+    margin: 9pt 3pt;
+    padding: 5pt;
+    width: 180pt;
+    height: 190pt;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0,0,0,0.0);
+    outline-style: none;
+    background: rgba(0,0,0,0.02) url("img/plus-gray.svg") no-repeat scroll center center / 64pt 64pt;
+    border-radius: 4pt;
+
+    will-change: transform, opacity;
+    transform: translateX(-50pt);
+    opacity: 0.0;
+}
+
+.add-image.in {
+    -webkit-transition: 0.5s;
+    -moz-transition: 0.5s;
+    -ms-transition: 0.5s;
+    -o-transition: 0.5s;
+    transition: 0.5s;
+	
+	transform: translateX(0pt) translateY(0pt);
+    opacity: 1.0;
+}
+
+.add-image:hover {
+    -webkit-transition: 0.5s;
+    -moz-transition: 0.5s;
+    -ms-transition: 0.5s;
+    -o-transition: 0.5s;
+    transition: 0.5s;
+	
+	border-color: rgba(0,0,0,0.1);
+    background: rgba(0,0,0,0.04) url("img/plus-gray.svg") no-repeat scroll center center / 64pt 64pt;
+}

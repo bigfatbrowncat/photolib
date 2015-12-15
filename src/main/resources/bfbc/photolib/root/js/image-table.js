@@ -1,10 +1,33 @@
 function createImageTable(imageTableNode) {
-    imageTableNode.clearImages = function() {
-		while (imageTableNode.firstChild) {
-			imageTableNode.removeChild(imageTableNode.firstChild);
-		}				
-	}
 	
+	// Creating the node-button for adding a new image
+	var addItemNode = document.createElement("div");
+	addItemNode.setAttribute("tabindex", -1);
+	addItemNode.setAttribute("class", "add-image");
+	imageTableNode.appendChild(addItemNode);
+	
+	setTimeout(function() {
+		addItemNode.classList.add("in");
+	}, 500);
+
+	addItemNode.addEventListener("click", function() {
+		websocket.send(JSON.stringify({
+				"command": {
+					"items": ["images", "add"]
+				},
+				"arguments": []
+			}
+		));
+	});
+
+	
+	// Adding functions to the table node
+    imageTableNode.clearImages = function() {
+		while (imageTableNode.firstChild != addItemNode) {
+			imageTableNode.removeChild(imageTableNode.firstChild);
+		}
+	}
+    
     imageTableNode.processUpdateRequest = function (path_items, arguments) {
 	
     	if (path_items[0] == "add") {
@@ -167,7 +190,7 @@ function createImageTable(imageTableNode) {
 	
 	imageTableNode.appendItem = function(image) {
 		var imageTag = this.createItem(image.id, image);
-		this.appendChild(imageTag);
+		this.insertBefore(imageTag, addItemNode);
 	}
 	
 	imageTableNode.appendItems = function(imageList) {
