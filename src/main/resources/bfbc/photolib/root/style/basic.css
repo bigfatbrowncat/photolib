@@ -1,0 +1,22 @@
+head, style, script, link { display: none; }
+
+html, body {
+	padding: 0; margin: 0; display: block;
+}
+
+::-webkit-scrollbar {
+    width: 10pt;
+	background: rgba(0, 0, 0, 0.03);
+}
+ 
+::-webkit-scrollbar-track {
+}
+ 
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4pt;
+    border-color: transparent;
+    border-width: 2px;
+    border-style: solid;
+    background-clip: content-box;
+}

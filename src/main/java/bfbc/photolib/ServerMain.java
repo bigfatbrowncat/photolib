@@ -20,7 +20,7 @@ public class ServerMain {
 	private static final String STATIC_ROOT = "/" + ServerMain.class.getPackage().getName().replace('.', '/') + "/root";
 	
     public static void main(String[] args) {
-    	port(8081);
+    	port(9876);
     	staticFileLocation(STATIC_ROOT);
 
     	webSocket("/upload/image", FileUploaderWebSocket.class);

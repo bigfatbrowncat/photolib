@@ -7,7 +7,7 @@ body {
 .image {
     position: relative;
     display: inline-block;
-    margin: 9pt 3pt;
+    margin: 5pt 1pt;
     padding: 5pt;
     width: 180pt;
     height: 190pt;
@@ -15,7 +15,6 @@ body {
     border-width: 1px;
     border-color: rgba(0,0,0,0.0);
     outline-style: none;
-    background: rgba(0,0,0,0.02);
     border-radius: 4pt;
 
     will-change: transform, opacity;
@@ -176,7 +175,7 @@ body {
 .add-image {
     position: relative;
     display: inline-block;
-    margin: 9pt 3pt;
+    margin: 5pt 1pt;
     padding: 5pt;
     width: 180pt;
     height: 190pt;
